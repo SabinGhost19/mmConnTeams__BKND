@@ -1,4 +1,5 @@
 package com.sabinghost19.teamslkghostapp.dto.registerRequest;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sabinghost19.teamslkghostapp.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.constraints.AssertTrue;
-
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.descentralizers.NotificationPreferencesDeserializer;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -50,6 +51,7 @@ public class RegisterUserRequest {
 
     private String phoneNumber;
 
+    @JsonDeserialize(using = NotificationPreferencesDeserializer.class)
     private NotificationPreferencesDto notificationPreferences;
 
     @AssertTrue(message = "Terms must be accepted")
@@ -58,14 +60,7 @@ public class RegisterUserRequest {
     @AssertTrue(message = "Privacy policy must be accepted")
     private boolean privacyPolicyAccepted;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class NotificationPreferencesDto {
-        private boolean email = true;
-        private boolean push = true;
-        private boolean desktop = true;
-    }
+
 }
 
 
