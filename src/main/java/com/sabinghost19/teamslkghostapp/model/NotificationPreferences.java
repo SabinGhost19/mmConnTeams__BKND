@@ -1,4 +1,5 @@
 package com.sabinghost19.teamslkghostapp.model;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.NotificationPreferencesDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.constraints.AssertTrue;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.descentralizers.NotificationPreferencesDeserializer;
 @Data
@@ -46,8 +45,6 @@ public class RegisterUserRequest {
     private String group;
 
     private String bio;
-
-    private MultipartFile profileImage;
 
     private String phoneNumber;
 
