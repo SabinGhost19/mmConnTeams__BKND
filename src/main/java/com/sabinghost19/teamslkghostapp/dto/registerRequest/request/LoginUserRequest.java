@@ -1,4 +1,4 @@
-package com.sabinghost19.teamslkghostapp.dto.registerRequest;
+package com.sabinghost19.teamslkghostapp.dto.registerRequest.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,7 +1,6 @@
 package com.sabinghost19.teamslkghostapp.services;
-
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.NotificationPreferencesDto;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.RegisterUserRequest;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.request.RegisterUserRequest;
 import com.sabinghost19.teamslkghostapp.exceptions.EmailAlreadyExistsException;
 import com.sabinghost19.teamslkghostapp.exceptions.PasswordMismatchException;
 import com.sabinghost19.teamslkghostapp.model.NotificationPreferences;
@@ -14,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Service
@@ -41,13 +42,19 @@ public class RegisterService {
             throw new EmailAlreadyExistsException("Email already exists");
         }
 
+
+
         User new_user=User.builder().
                 firstName(request.getFirstName()).
                 lastName(request.getLastName()).
                 email(request.getEmail()).
                 password(request.getPassword()).
-                role(request.getRole()).
                 build();
+
+        //implicit USER classic
+        List<String> roles = new ArrayList<>();
+        roles.add("ROLE_USER");
+        new_user.setRoles(roles);
 
         userRepository.save(new_user);
 
@@ -80,5 +87,4 @@ public class RegisterService {
         //if the upload succeded move forward
         return true;
     }
-
 }

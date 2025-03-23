@@ -1,5 +1,6 @@
-package com.sabinghost19.teamslkghostapp.dto.registerRequest;
+package com.sabinghost19.teamslkghostapp.dto.registerRequest.response;
 
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,4 +15,5 @@ public class LoginUserReponseDTO {
     private String message;
     private UserDto user;
     private String token;
+    private String refreshToken;
 }

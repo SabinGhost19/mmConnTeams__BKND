@@ -1,5 +1,6 @@
-package com.sabinghost19.teamslkghostapp.dto.registerRequest;
+package com.sabinghost19.teamslkghostapp.dto.registerRequest.request;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.NotificationPreferencesDto;
 import com.sabinghost19.teamslkghostapp.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
