@@ -4,6 +4,7 @@ import com.sabinghost19.teamslkghostapp.model.User;
 import com.sabinghost19.teamslkghostapp.repository.RefreshTokenRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
 import com.sabinghost19.teamslkghostapp.security.jwt.JwtTokenProvider;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RefreshToke
 import java.time.Instant;
 import java.util.UUID;
 @Service
+@Transactional
 public class RefreshTokenService {
 
     @Value("${jwt.refresh-expiration}")
@@ -26,11 +28,16 @@ public class RefreshTokenService {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+
     public RefreshToken createRefreshToken(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        refreshTokenRepository.deleteByUser(user);
+        RefreshToken existingToken = refreshTokenRepository.findByUser(user).orElse(null);
+        if (existingToken != null) {
+            refreshTokenRepository.delete(existingToken);
+            refreshTokenRepository.flush();
+        }
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
