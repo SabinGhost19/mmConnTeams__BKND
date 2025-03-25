@@ -1,5 +1,4 @@
 package com.sabinghost19.teamslkghostapp.model;
-import com.sabinghost19.teamslkghostapp.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,6 +35,9 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = true)
+    private String status;
 
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> roles = new ArrayList<>();

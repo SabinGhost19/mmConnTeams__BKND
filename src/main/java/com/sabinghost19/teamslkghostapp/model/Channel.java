@@ -1,0 +1,62 @@
+package com.sabinghost19.teamslkghostapp.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+@Entity
+@Table(name = "channels", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"team_id", "name"})
+})
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Channel {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id", nullable = false)
+    private Team team;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "is_private")
+    private Boolean isPrivate = false;
+
+    @Column(name = "created_at")
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
+    private Set<Message> messages = new HashSet<>();
+
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
+    private Set<ChannelMember> members = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
+    }
+}
