@@ -11,21 +11,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Prefixele pentru canalele la care clienții pot primi mesaje
+        // Prefixes for channels where clients can receive messages
         config.enableSimpleBroker("/topic", "/queue", "/user");
 
-        // Prefixul pentru endpoint-uri la care clienții pot trimite mesaje
+        // Prefix for endpoints where clients can send messages
         config.setApplicationDestinationPrefixes("/app");
 
-        // Configurare pentru mesaje directe către utilizatori specifici
+        // Configuration for direct messages to specific users
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint-ul WebSocket - clienții se conectează aici
+        // WebSocket endpoint - clients connect here
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")  // În producție, specificați doar originile permise
-                .withSockJS();  // Suport SockJS pentru browsere care nu au WebSocket nativ
+                .setAllowedOriginPatterns("http://localhost:3000")
+                .withSockJS(); // SockJS support for browsers without native WebSocket
     }
 }

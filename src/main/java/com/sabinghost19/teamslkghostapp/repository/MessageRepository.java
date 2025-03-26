@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 @Repository
@@ -31,4 +32,10 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     List<Message> findDetailedMessagesByChannelId(
             @Param("channelId") UUID channelId
     );
+
+    @Query("SELECT m FROM Message m " +
+            "WHERE m.channel.id = :channelId AND m.createdAt > :timestamp " +
+            "ORDER BY m.createdAt ASC")
+    List<Message> findMessagesAfterTimestamp(@Param("channelId") UUID channelId, @Param("timestamp") Instant timestamp);
+
 }

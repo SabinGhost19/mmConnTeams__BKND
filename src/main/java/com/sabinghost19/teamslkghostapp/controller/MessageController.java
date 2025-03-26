@@ -5,35 +5,41 @@ import com.sabinghost19.teamslkghostapp.services.MessageService;
 import com.sabinghost19.teamslkghostapp.services.ReactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
 @Slf4j
 public class MessageController {
 
     private final MessageService messageService;
     private final ReactionService reactionService;
 
+    @Autowired
+    public MessageController(MessageService messageService, ReactionService reactionService) {
+        this.messageService = messageService;
+        this.reactionService = reactionService;
+    }
 
     @GetMapping("/channels/{channelId}/messages")
-    public ResponseEntity<List<MessageDTO>> getChannelMessages(@PathVariable Integer channelId) {
+    public ResponseEntity<List<MessageDTO>> getChannelMessages(@PathVariable UUID channelId) {
         return ResponseEntity.ok(messageService.getChannelMessages(channelId));
     }
 
 
     @GetMapping("/channels/{channelId}/messages/after/{timestamp}")
     public ResponseEntity<List<MessageDTO>> getNewMessages(
-            @PathVariable Integer channelId,
+            @PathVariable UUID channelId,
             @PathVariable Long timestamp) {
 
-        List<MessageDTO> newMessages = messageService.getMessagesAfterTimestamp(channelId, timestamp);
+        List<MessageDTO> newMessages = messageService.getMessagesAfterTimestamp(channelId, Instant.ofEpochSecond(timestamp));
         return ResponseEntity.ok(newMessages);
     }
 
@@ -45,9 +51,9 @@ public class MessageController {
     }
 
     @GetMapping("/messages/{messageId}")
-    public ResponseEntity<MessageDTO> getMessage(@PathVariable Integer messageId) {
+    public ResponseEntity<MessageDTO> getMessage(@PathVariable UUID messageId) {
 
-        return ResponseEntity.ok(messageService.getMessageById(messageId));
+        return ResponseEntity.ok(messageService.getMessage(messageId));
     }
 
 
@@ -62,12 +68,12 @@ public class MessageController {
 
     @PostMapping("/messages/{messageId}/reactions")
     public ResponseEntity<?> addReaction(
-            @PathVariable Integer messageId,
+            @PathVariable UUID messageId,
             @RequestBody Map<String, Object> payload) {
 
         ReactionDTO reactionDTO = new ReactionDTO();
         reactionDTO.setMessageId(messageId);
-        reactionDTO.setUserId((Integer) payload.get("user_id"));
+        reactionDTO.setUserId((UUID) payload.get("user_id"));
         reactionDTO.setReactionType((String) payload.get("reaction_type"));
         reactionDTO.setAction("add");
 
@@ -78,12 +84,12 @@ public class MessageController {
 
     @DeleteMapping("/messages/{messageId}/reactions")
     public ResponseEntity<?> removeReaction(
-            @PathVariable Integer messageId,
+            @PathVariable UUID messageId,
             @RequestBody Map<String, Object> payload) {
 
         ReactionDTO reactionDTO = new ReactionDTO();
         reactionDTO.setMessageId(messageId);
-        reactionDTO.setUserId((Integer) payload.get("user_id"));
+        reactionDTO.setUserId((UUID)payload.get("user_id"));
         reactionDTO.setReactionType((String) payload.get("reaction_type"));
         reactionDTO.setAction("remove");
 
@@ -96,10 +102,10 @@ public class MessageController {
      */
     @PostMapping("/messages/{messageId}/attachments")
     public ResponseEntity<?> attachToMessage(
-            @PathVariable Integer messageId,
+            @PathVariable UUID messageId,
             @RequestBody Map<String, Object> payload) {
 
-        Integer attachmentId = (Integer) payload.get("attachment_id");
+        UUID attachmentId = (UUID) payload.get("attachment_id");
         messageService.addAttachmentToMessage(messageId, attachmentId);
 
         return ResponseEntity.ok().build();

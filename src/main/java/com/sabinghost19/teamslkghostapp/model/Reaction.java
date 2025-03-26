@@ -30,6 +30,10 @@ public class Reaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_id")
+    private Channel channel;  // Adăugat pentru WebSocket
+
     @Column(name = "reaction_type", nullable = false)
     private String reactionType;
 

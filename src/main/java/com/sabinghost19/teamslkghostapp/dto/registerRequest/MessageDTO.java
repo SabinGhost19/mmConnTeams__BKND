@@ -15,7 +15,7 @@ public class MessageDTO {
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<AttachmentDTO> attachments;
+    private List<FileDTO> attachments;
     private List<ReactionDTO> reactions;
     private Boolean isRead;
 }

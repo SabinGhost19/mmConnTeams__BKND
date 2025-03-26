@@ -32,6 +32,10 @@ public class File {
     @JoinColumn(name = "uploaded_by")
     private User uploadedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "message_id")
+    private Message message;
+
     @Column(name = "file_name", nullable = false)
     private String fileName;
 

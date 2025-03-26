@@ -6,6 +6,7 @@ import com.sabinghost19.teamslkghostapp.services.ChannelService;
 import com.sabinghost19.teamslkghostapp.services.TeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +15,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
 @Slf4j
 public class TeamController {
 
@@ -22,6 +22,11 @@ public class TeamController {
     private final ChannelService channelService;
 
 
+    @Autowired
+    public TeamController(TeamService teamService, ChannelService channelService) {
+        this.channelService = channelService;
+        this.teamService = teamService;
+    }
     @GetMapping("/teams")
     public ResponseEntity<List<TeamDTO>> getUserTeams(@RequestAttribute("userId") UUID userId) {
         return ResponseEntity.ok(teamService.getTeamsForUser(userId));

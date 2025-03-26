@@ -4,7 +4,6 @@ package com.sabinghost19.teamslkghostapp.services;
 //import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.FileDTO;
-import com.sabinghost19.teamslkghostapp.model.File;
 import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.model.Channel;
 import com.sabinghost19.teamslkghostapp.model.User;
@@ -12,26 +11,31 @@ import com.sabinghost19.teamslkghostapp.repository.FileRepository;
 import com.sabinghost19.teamslkghostapp.repository.TeamRepository;
 import com.sabinghost19.teamslkghostapp.repository.ChannelRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class FileService {
+
     private final FileRepository fileRepository;
     private final TeamRepository teamRepository;
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
     //private final AmazonS3 amazonS3Client;
 
+    @Autowired
+    public FileService(FileRepository fileRepository, TeamRepository teamRepository, ChannelRepository channelRepository, UserRepository userRepository) {
+        this.fileRepository = fileRepository;
+        this.teamRepository = teamRepository;
+        this.channelRepository = channelRepository;
+        this.userRepository = userRepository;
+    }
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
@@ -44,7 +48,7 @@ public class FileService {
             UUID teamId,
             UUID channelId,
             UUID uploadedBy) {
-        try {
+//        try {
 
             if (multipartFile.isEmpty()) {
                 throw new IllegalArgumentException("Fișier gol");
@@ -85,35 +89,37 @@ public class FileService {
             // Generare URL S3
            // String s3Url = amazonS3Client.getUrl(bucketName, s3Key).toString();
 
-            File file = File.builder()
-                    .team(team)
-                    .channel(channel)
-                    .uploadedBy(user)
-                    .fileName(originalFileName)
-                    .fileType(multipartFile.getContentType())
-                    .fileSize((int) multipartFile.getSize())
-                    .awsS3Key(s3Key)
-                    .url(s3Url)
-                    .build();
+//            File file = File.builder()
+//                    .team(team)
+//                    .channel(channel)
+//                    .uploadedBy(user)
+//                    .fileName(originalFileName)
+//                    .fileType(multipartFile.getContentType())
+//                    .fileSize((int) multipartFile.getSize())
+//                    .awsS3Key(s3Key)
+//                    .url(s3Url)
+//                    .build();
 
-            file = fileRepository.save(file);
+//            file = fileRepository.save(file);
+//
+//            return FileDTO.builder()
+//                    .id(file.getId())
+//                    .teamId(team != null ? team.getId() : null)
+//                    .channelId(channel != null ? channel.getId() : null)
+//                    .uploadedById(user.getId())
+//                    .fileName(file.getFileName())
+//                    .fileType(file.getFileType())
+//                    .fileSize(file.getFileSize())
+//                    .awsS3Key(file.getAwsS3Key())
+//                    .url(file.getUrl())
+//                    .uploadedAt(file.getUploadedAt())
+//                    .build();
 
-            return FileDTO.builder()
-                    .id(file.getId())
-                    .teamId(team != null ? team.getId() : null)
-                    .channelId(channel != null ? channel.getId() : null)
-                    .uploadedById(user.getId())
-                    .fileName(file.getFileName())
-                    .fileType(file.getFileType())
-                    .fileSize(file.getFileSize())
-                    .awsS3Key(file.getAwsS3Key())
-                    .url(file.getUrl())
-                    .uploadedAt(file.getUploadedAt())
-                    .build();
+//        } catch (IOException ex) {
+//            log.error("Eroare la încărcarea fișierului", ex);
+//            throw new RuntimeException("Nu s-a putut salva fișierul", ex);
+//        }
 
-        } catch (IOException ex) {
-            log.error("Eroare la încărcarea fișierului", ex);
-            throw new RuntimeException("Nu s-a putut salva fișierul", ex);
-        }
+        return new FileDTO();
     }
 }

@@ -19,7 +19,6 @@ import com.sabinghost19.teamslkghostapp.services.ReactionService;
 import com.sabinghost19.teamslkghostapp.services.UserService;
 
 @Controller
-@RequiredArgsConstructor
 @Slf4j
 public class WebSocketController {
 
@@ -27,6 +26,13 @@ public class WebSocketController {
     private final MessageService messageService;
     private final ReactionService reactionService;
     private final UserService userService;
+
+    public WebSocketController(SimpMessagingTemplate messagingTemplate, MessageService messageService, ReactionService reactionService, UserService userService) {
+        this.messagingTemplate = messagingTemplate;
+        this.messageService = messageService;
+        this.reactionService = reactionService;
+        this.userService = userService;
+    }
 
     // Maparea sesiunilor la utilizatori
     private final Map<String, Integer> sessionUserMap = new ConcurrentHashMap<>();

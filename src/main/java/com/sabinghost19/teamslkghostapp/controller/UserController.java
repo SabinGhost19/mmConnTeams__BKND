@@ -3,6 +3,7 @@ package com.sabinghost19.teamslkghostapp.controller;
 import com.sabinghost19.teamslkghostapp.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
@@ -10,11 +11,15 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
 @Slf4j
 public class UserController {
 
     private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping("/current")
     public ResponseEntity<?> getCurrentUser(@RequestAttribute("userId") UUID userId) {

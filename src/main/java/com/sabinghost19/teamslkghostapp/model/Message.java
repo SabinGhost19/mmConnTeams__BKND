@@ -42,7 +42,7 @@ public class Message {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Attachment> attachments = new HashSet<>();
+    private Set<File> attachments = new HashSet<>();
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Reaction> reactions = new HashSet<>();

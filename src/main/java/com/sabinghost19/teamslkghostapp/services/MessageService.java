@@ -1,28 +1,28 @@
 package com.sabinghost19.teamslkghostapp.services;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.AttachmentDTO;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.FileDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.MessageDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.ReactionDTO;
-import com.sabinghost19.teamslkghostapp.model.Channel;
-import com.sabinghost19.teamslkghostapp.model.Message;
+import com.sabinghost19.teamslkghostapp.model.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.sabinghost19.teamslkghostapp.model.MessageReadStatus;
-import com.sabinghost19.teamslkghostapp.model.User;
-import com.sabinghost19.teamslkghostapp.repository.ChannelRepository;
-import com.sabinghost19.teamslkghostapp.repository.MessageReadStatusRepository;
-import com.sabinghost19.teamslkghostapp.repository.MessageRepository;
-import com.sabinghost19.teamslkghostapp.repository.UserRepository;
+import com.sabinghost19.teamslkghostapp.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,10 +34,35 @@ public class MessageService  {
     private final MessageReadStatusRepository messageReadStatusRepository;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
+    private final FileRepository fileRepository;
+
+    @Autowired
+    public MessageService(UserRepository userRepository,
+                          ChannelRepository channelRepository,
+                          MessageRepository messageRepository,
+                          MessageReadStatusRepository  messageReadStatusRepository,
+                          FileRepository fileRepository) {
+        this.userRepository = userRepository;
+        this.channelRepository = channelRepository;
+        this.messageRepository = messageRepository;
+        this.messageReadStatusRepository=messageReadStatusRepository;
+        this.fileRepository = fileRepository;
+    }
+
+    public MessageDTO getMessage(UUID id) {
+
+        Optional<Message> messageOptional = messageRepository.findById(id);
+
+        if (messageOptional.isPresent()) {
+            return convertToDTO(messageOptional.get());
+        } else {
+            throw new EntityNotFoundException("Mesajul cu ID-ul " + id + " nu a fost găsit");
+          //or return null...maybe not, IDK, not now
+        }
+    }
 
     @Transactional
     public MessageDTO saveMessage(MessageDTO messageDTO) {
-        // Convertim DTO-ul în entitate
 
         Channel channel = channelRepository.findById(Long.valueOf(messageDTO.getChannelId()))
                 .orElseThrow(() -> new EntityNotFoundException("Channel not found"));
@@ -102,6 +127,29 @@ public class MessageService  {
         messageReadStatusRepository.saveAll(readStatuses);
     }
 
+    public List<MessageDTO> getMessagesAfterTimestamp(UUID channelId, Instant timestamp) {
+
+        List<Message> messages = messageRepository.findMessagesAfterTimestamp(channelId, timestamp);
+
+        return messages.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
+    public void addAttachmentToMessage(UUID messageId, UUID attachmentId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new EntityNotFoundException("Mesajul cu ID-ul " + messageId + " nu a fost găsit"));
+
+        File file = fileRepository.findById(attachmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Fișierul cu ID-ul " + attachmentId + " nu a fost găsit"));
+       
+        file.setMessage(message);
+
+        message.getAttachments().add(file);
+
+        messageRepository.save(message);
+    }
 
     public MessageDTO convertToDTO(Message message) {
         MessageDTO dto = new MessageDTO();
@@ -124,27 +172,36 @@ public class MessageService  {
 
         dto.setAttachments(message.getAttachments().stream()
                 .map(attachment -> {
-                    AttachmentDTO attachmentDTO = new AttachmentDTO();
-                    attachmentDTO.setId(attachment.getId() != null ?
-                            attachment.getId().hashCode() : null);
+                    FileDTO attachmentDTO = new FileDTO();
                     attachmentDTO.setFileName(attachment.getFileName());
-                    /// DE COMPLETAT
-
+                    attachmentDTO.setTeamId(attachment.getTeam().getId());
+                    attachmentDTO.setChannelId(attachment.getChannel().getId());
+                    attachmentDTO.setUploadedAt(attachment.getUploadedAt());
+                    attachmentDTO.setFileSize(attachment.getFileSize());
+                    attachmentDTO.setUploadedById(attachment.getUploadedBy().getId());
+                    attachmentDTO.setUrl(attachment.getUrl());
+                    attachmentDTO.setFileType(attachment.getFileType());
+                    attachmentDTO.setAwsS3Key(attachment.getAwsS3Key());
                     return attachmentDTO;
                 })
                 .collect(Collectors.toList()));
+
 
         dto.setReactions(message.getReactions().stream()
                 .map(reaction -> {
                     ReactionDTO reactionDTO = new ReactionDTO();
                     reactionDTO.setId(reaction.getId());
-                    /// DE COMPLETAT
+                    reactionDTO.setMessageId(reaction.getMessage().getId());
+                    reactionDTO.setUserId(reaction.getUser().getId());
+                    reactionDTO.setChannelId(reaction.getChannel().getId());
+                    reactionDTO.setReactionType(reaction.getReactionType());
+                    //null....???
+                    reactionDTO.setAction("");
                     return reactionDTO;
                 })
                 .collect(Collectors.toList()));
 
-
-        dto.setIsRead(false); // Sau implementează logica de verificare
+        dto.setIsRead(false);
 
         return dto;
     }
