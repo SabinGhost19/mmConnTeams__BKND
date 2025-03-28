@@ -1,25 +1,22 @@
 package com.sabinghost19.teamslkghostapp.security.jwt;
-import java.nio.charset.StandardCharsets;
+
 import java.util.Date;
 import javax.crypto.SecretKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.jsonwebtoken.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
+import java.util.Base64;
+import java.util.UUID;
 
+@Slf4j
 @Component
 public class JwtUtils {
-    private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
-
     @Value("${jwt.secret.access}")
     private String jwtSecret;
 
@@ -30,15 +27,27 @@ public class JwtUtils {
 
     @PostConstruct
     public void init() {
-        key = Keys.hmacShaKeyFor(java.util.Base64.getDecoder().decode(jwtSecret));
+        this.key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret));
     }
-    public JwtUtils() {}
 
     public String generateToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
 
         return Jwts.builder()
                 .subject(userPrincipal.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .signWith(key)
+                .compact();
+    }
+
+    // Metodă pentru a genera token cu userId inclus
+    public String generateTokenWithUserId(Authentication authentication, Integer userId) {
+        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
+
+        return Jwts.builder()
+                .subject(userPrincipal.getUsername())
+                .claim("userId", userId)  // Adăugăm userId ca și claim
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key)
@@ -54,22 +63,41 @@ public class JwtUtils {
                 .getSubject();
     }
 
+    public UUID getUserIdFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith((SecretKey) this.key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            // Extract userId as a String and convert to UUID
+            String userIdStr = claims.get("userId", String.class);
+            return UUID.fromString(userIdStr);
+        } catch (Exception e) {
+            log.error("Error extracting userId from token", e);
+            return null;
+        }
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
             return true;
         } catch (SignatureException e) {
-            logger.error("Invalid JWT signature: {}", e.getMessage());
+            log.error("Invalid JWT signature: {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
+            log.error("Invalid JWT token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            logger.error("JWT token is expired: {}", e.getMessage());
+            log.error("JWT token is expired: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            logger.error("JWT token is unsupported: {}", e.getMessage());
+            log.error("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            logger.error("JWT claims string is empty: {}", e.getMessage());
+            log.error("JWT claims string is empty: {}", e.getMessage());
         }
 
         return false;
     }
+
+
 }

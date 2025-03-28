@@ -3,7 +3,6 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.MessageDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.ReactionDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.TypingDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserStatusDTO;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -35,24 +34,21 @@ public class WebSocketController {
     }
 
     // Maparea sesiunilor la utilizatori
-    private final Map<String, Integer> sessionUserMap = new ConcurrentHashMap<>();
+    private final Map<String, UUID> sessionUserMap = new ConcurrentHashMap<>();
 
     // Maparea canalelor active per sesiune
     private final Map<String, Set<Integer>> userChannelsMap = new ConcurrentHashMap<>();
 
-    /**
-     * Autentificarea utilizatorului via WebSocket
-     */
     @MessageMapping("/authenticate")
     public void authenticate(@Payload Map<String, Object> payload,
                              SimpMessageHeaderAccessor headerAccessor) {
-        Integer userId = (Integer) payload.get("userId");
+        UUID userId = (UUID) payload.get("userId");
         if (userId != null && headerAccessor.getSessionId() != null) {
             log.info("User {} authenticated via WebSocket", userId);
 
             // Salvează ID-ul utilizatorului în sesiune
             headerAccessor.getSessionAttributes().put("userId", userId);
-            sessionUserMap.put(headerAccessor.getSessionId(), userId);
+            sessionUserMap.put(headerAccessor.getSessionId(),userId);
 
             // Actualizează statusul utilizatorului
             userService.updateStatus(UUID.fromString(userId.toString()), "online");
@@ -70,7 +66,7 @@ public class WebSocketController {
     public void joinChannel(@Payload Integer channelId,
                             SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        Integer userId = sessionUserMap.get(sessionId);
+        UUID userId = sessionUserMap.get(sessionId);
 
         if (userId != null) {
             log.info("User {} joined channel {}", userId, channelId);
@@ -104,7 +100,7 @@ public class WebSocketController {
     public void focusChannel(@Payload UUID channelId,
                              SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        Integer userInteger = sessionUserMap.get(sessionId);
+        UUID userInteger = sessionUserMap.get(sessionId);
         UUID userId = UUID.fromString(userInteger.toString());
 
         if (userId != null) {
@@ -139,7 +135,7 @@ public class WebSocketController {
     public void sendMessage(@Payload MessageDTO messageDTO,
                             SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        Integer userId = sessionUserMap.get(sessionId);
+        UUID userId = sessionUserMap.get(sessionId);
 
         if (userId != null && userId.equals(messageDTO.getSenderId())) {
             log.info("Received message for channel {}", messageDTO.getChannelId());
@@ -159,7 +155,7 @@ public class WebSocketController {
     public void handleReaction(@Payload ReactionDTO reactionDTO,
                                SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        Integer userId = sessionUserMap.get(sessionId);
+        UUID userId = sessionUserMap.get(sessionId);
 
         if (userId != null && userId.equals(reactionDTO.getUserId())) {
             log.info("Received reaction {} for message {}", reactionDTO.getReactionType(), reactionDTO.getMessageId());
@@ -183,7 +179,7 @@ public class WebSocketController {
     public void handleTypingIndicator(@Payload TypingDTO typingDTO,
                                       SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        Integer userId = sessionUserMap.get(sessionId);
+        UUID userId = sessionUserMap.get(sessionId);
 
         if (userId != null && userId.equals(typingDTO.getUserId())) {
             // Transmite indicatorul de typing către toți utilizatorii din canal
@@ -201,7 +197,7 @@ public class WebSocketController {
     public void updateStatus(@Payload UserStatusDTO statusDTO,
                              SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        Integer userInteger = sessionUserMap.get(sessionId);
+        UUID userInteger = sessionUserMap.get(sessionId);
         UUID userId = UUID.fromString(userInteger.toString());
 
         if (userId != null && userId.equals(statusDTO.getUserId())) {

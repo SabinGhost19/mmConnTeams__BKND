@@ -2,17 +2,21 @@ package com.sabinghost19.teamslkghostapp.security.jwt;
 
 import com.sabinghost19.teamslkghostapp.model.User;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
+@Slf4j
 public class JwtTokenProvider {
 
     @Value("${jwt.secret.access}")
@@ -25,14 +29,27 @@ public class JwtTokenProvider {
 
     @PostConstruct
     public void init() {
-        key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+        byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public JwtTokenProvider(){}
-
     public String generateToken(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User userDetails = (User) authentication.getPrincipal();
         return generateTokenFromUsername(userDetails.getUsername());
+    }
+
+    public String generateJwtToken(Authentication authentication) {
+        User userPrincipal = (User) authentication.getPrincipal();
+        System.out.println("User is: " +userPrincipal);
+        System.out.println("Username is: " +userPrincipal.getUsername()+"and id: "+userPrincipal.getId());
+
+        return Jwts.builder()
+                .subject(userPrincipal.getUsername())
+                .claim("userId", userPrincipal.getId().toString())  // Convert UUID to String
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(key)
+                .compact();
     }
 
     public String generateTokenFromUser(User user) {
@@ -50,23 +67,44 @@ public class JwtTokenProvider {
                 .signWith(key)
                 .compact();
     }
+
     public String getUsernameFromToken(String token) {
-        return Jwts.parser()
-                .verifyWith((javax.crypto.SecretKey)key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+        try {
+            return Jwts.parser()
+                    .verifyWith((SecretKey) this.key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+        } catch (Exception e) {
+            log.error("Error extracting username from token", e);
+            return null;
+        }
+    }
+
+    public Integer getUserIdFromToken(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith((SecretKey) this.key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .get("userId", Integer.class);
+        } catch (Exception e) {
+            log.error("Error extracting userId from token", e);
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
-                    .verifyWith((javax.crypto.SecretKey)key)
+                    .verifyWith((SecretKey) this.key)
                     .build()
                     .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
+            log.error("Token validation failed", e);
             return false;
         }
     }

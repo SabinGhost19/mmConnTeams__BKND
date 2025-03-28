@@ -51,7 +51,7 @@ public class LoginService {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
             User user = (User) authentication.getPrincipal();
-            String jwt = tokenProvider.generateToken(authentication);
+            String jwt = tokenProvider.generateJwtToken(authentication);
 
             // Create refresh token
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
@@ -82,7 +82,7 @@ public class LoginService {
     public LoginUserReponseDTO verifyUser(String email, String candidate_password) {
         Optional<User> userBD=this.userRepository.findByEmail(email);
         LoginUserReponseDTO loginUserReponseDTO;
-        if(!userBD.isPresent()){
+        if(userBD.isEmpty()){
             //user is not present
             //give error
             logger.info("USER AUTH FAILED....");
