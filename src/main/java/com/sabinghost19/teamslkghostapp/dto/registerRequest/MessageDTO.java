@@ -4,14 +4,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageDTO {
-    private Integer id;
-    private Integer channelId;
-    private Integer senderId;
+    private UUID id;
+    private UUID channelId;
+    private UUID senderId;
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

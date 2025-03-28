@@ -9,8 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ChannelRepository extends JpaRepository<Channel,Long> {
+public interface ChannelRepository extends JpaRepository<Channel,UUID> {
 
-    Optional<Channel> findById(UUID  channelId);
     List<Channel> findByTeam_Id(UUID teamId);
 }

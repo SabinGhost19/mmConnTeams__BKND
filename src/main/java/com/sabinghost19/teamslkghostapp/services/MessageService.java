@@ -64,7 +64,7 @@ public class MessageService  {
     @Transactional
     public MessageDTO saveMessage(MessageDTO messageDTO) {
 
-        Channel channel = channelRepository.findById(Long.valueOf(messageDTO.getChannelId()))
+        Channel channel = channelRepository.findById(messageDTO.getChannelId())
                 .orElseThrow(() -> new EntityNotFoundException("Channel not found"));
 
         User sender = userRepository.findById(UUID.fromString(String.valueOf(messageDTO.getSenderId())))
@@ -154,13 +154,11 @@ public class MessageService  {
     public MessageDTO convertToDTO(Message message) {
         MessageDTO dto = new MessageDTO();
 
-        dto.setId(message.getId() != null ? message.getId().hashCode() : null);
+        dto.setId(message.getId()!=null?message.getId():UUID.randomUUID());
 
-        dto.setChannelId(message.getChannel() != null ?
-                message.getChannel().getId().hashCode() : null);
+        dto.setChannelId(message.getChannel().getId()!=null?message.getChannel().getId():UUID.randomUUID());
 
-        dto.setSenderId(message.getSender() != null ?
-                message.getSender().getId().hashCode() : null);
+        dto.setSenderId(message.getSender().getId()!=null?message.getSender().getId():UUID.randomUUID());
 
         dto.setContent(message.getContent());
 

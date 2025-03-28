@@ -75,4 +75,10 @@ public class TeamService {
                 .map(UserDto::new)
                 .collect(Collectors.toList());
     }
+
+    public List<UUID> getTeamMembersIDs(UUID teamId) {
+        return userRepository.findUsersByTeamId(teamId).stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+    }
 }

@@ -41,12 +41,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.setUserDestinationPrefix("/user");
     }
 
-//    @Override
-//    public void registerStompEndpoints(StompEndpointRegistry registry) {
-//        registry.addEndpoint("/ws")
-//                .setAllowedOrigins("http://localhost:3000")  // Folosește setAllowedOrigins în loc de setAllowedOriginPatterns
-//                .withSockJS();
-//    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {

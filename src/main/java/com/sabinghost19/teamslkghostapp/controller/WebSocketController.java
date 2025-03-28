@@ -84,7 +84,7 @@ public class WebSocketController {
      * Utilizatorul părăsește un canal
      */
     @MessageMapping("/leave-channel")
-    public void leaveChannel(@Payload Integer channelId,
+    public void leaveChannel(@Payload UUID channelId,
                              SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
         if (sessionId != null && userChannelsMap.containsKey(sessionId)) {
@@ -121,7 +121,7 @@ public class WebSocketController {
      * Utilizatorul părăsește focusul de pe un canal
      */
     @MessageMapping("/unfocus-channel")
-    public void unfocusChannel(@Payload Integer channelId,
+    public void unfocusChannel(@Payload UUID channelId,
                                SimpMessageHeaderAccessor headerAccessor) {
         // Opțional - poate fi folosit pentru a marca momentul când utilizatorul
         // nu mai este activ într-un canal

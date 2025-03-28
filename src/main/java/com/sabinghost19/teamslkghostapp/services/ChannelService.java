@@ -1,6 +1,9 @@
 package com.sabinghost19.teamslkghostapp.services;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.ChannelDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.FileDTO;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamDTO;
+import com.sabinghost19.teamslkghostapp.model.Channel;
+import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.repository.ChannelRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
 import com.sabinghost19.teamslkghostapp.repository.FileRepository;
@@ -43,6 +46,11 @@ public class ChannelService {
                 .teamId(channel.getTeam().getId())
                 .isPrivate(channel.getIsPrivate())
                 .build();
+    }
+    public ChannelDTO createChannel(ChannelDTO channelDTO, TeamDTO teamDTO) {
+        Team existingTeam=teamDTO.toEntity(teamDTO);
+        Channel new_channel= channelDTO.toEntity(channelDTO,existingTeam);
+        return channelDTO.toDto(new_channel);
     }
 
     public List<UserDto> getChannelMembers(UUID channelId) {
