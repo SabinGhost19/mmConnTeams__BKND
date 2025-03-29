@@ -86,19 +86,17 @@ public class AuthController {
         String pw_hash = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
         request.setPassword(pw_hash);
         request.setConfirmPassword(pw_hash);
-        //salvam userul
+
         User savedUser=this.registerService.registerUser(request);
 
-        //verificam poza daca este buna
-        //dupa care salvam in cloud
+
        if(profileImage!=null && !profileImage.isEmpty()){
             //save the profile image in cloud or somewhere
           if (!this.registerService.uploadProfileImage(profileImage)) {
               //daca a crapat...handle
           }
         }
-       //make response
-        //  make here to call another service for generate the token
+
        RegisterUserResponseDTO registerUserResponseDTO=
                 RegisterUserResponseDTO.builder().
                         message("registrated succesfully").

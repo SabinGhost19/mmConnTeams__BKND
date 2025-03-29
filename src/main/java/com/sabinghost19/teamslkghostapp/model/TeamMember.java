@@ -1,23 +1,23 @@
 package com.sabinghost19.teamslkghostapp.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.UUID;
-
 @Entity
 @Table(name = "team_members")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"team", "user"}) // Exclude relațiile
+@EqualsAndHashCode(onlyExplicitlyIncluded = true) // Folosește doar ID pentru equals/hashCode
 public class TeamMember {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

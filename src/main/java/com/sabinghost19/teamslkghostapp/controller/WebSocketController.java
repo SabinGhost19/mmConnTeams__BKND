@@ -3,6 +3,7 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.MessageDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.ReactionDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.TypingDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserStatusDTO;
+import com.sabinghost19.teamslkghostapp.enums.Status;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -51,10 +52,10 @@ public class WebSocketController {
             sessionUserMap.put(headerAccessor.getSessionId(),userId);
 
             // Actualizează statusul utilizatorului
-            userService.updateStatus(UUID.fromString(userId.toString()), "online");
+            userService.updateStatus(UUID.fromString(userId.toString()), "ONLINE");
 
             // Notifică toți utilizatorii despre schimbarea de status
-            UserStatusDTO statusUpdate = new UserStatusDTO(UUID.fromString(userId.toString()), "online");
+            UserStatusDTO statusUpdate = new UserStatusDTO(UUID.fromString(userId.toString()),"ONLINE");
             messagingTemplate.convertAndSend("/topic/user-status", statusUpdate);
         }
     }

@@ -53,7 +53,6 @@ public class LoginService {
             User user = (User) authentication.getPrincipal();
             String jwt = tokenProvider.generateJwtToken(authentication);
 
-            // Create refresh token
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
             return LoginUserReponseDTO.builder()
@@ -63,7 +62,6 @@ public class LoginService {
                     .token(jwt)
                     .refreshToken(refreshToken.getToken())
                     .build();
-
         } catch (BadCredentialsException e) {
             return LoginUserReponseDTO.builder()
                     .success(false)
@@ -71,6 +69,8 @@ public class LoginService {
                     .build();
         }
     }
+
+
     public RefreshTokenResponseDTO refreshToken(RefreshTokenRequest request) {
         return refreshTokenService.refreshToken(request.getRefreshToken());
     }

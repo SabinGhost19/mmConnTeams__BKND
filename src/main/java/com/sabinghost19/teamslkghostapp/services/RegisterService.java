@@ -1,6 +1,8 @@
 package com.sabinghost19.teamslkghostapp.services;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.NotificationPreferencesDto;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.request.RegisterUserRequest;
+import com.sabinghost19.teamslkghostapp.enums.Role;
+import com.sabinghost19.teamslkghostapp.enums.Status;
 import com.sabinghost19.teamslkghostapp.exceptions.EmailAlreadyExistsException;
 import com.sabinghost19.teamslkghostapp.exceptions.PasswordMismatchException;
 import com.sabinghost19.teamslkghostapp.model.NotificationPreferences;
@@ -31,33 +33,34 @@ public class RegisterService {
         this.notificationPreferencesRepository = notificationPreferencesRepository;
     }
 
-    public User registerUser(RegisterUserRequest request){
-
-        if (!request.getPassword().equals(request.getConfirmPassword())){
-            //throw error
+    public User registerUser(RegisterUserRequest request) {
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new PasswordMismatchException("Passwords do not match");
         }
-        if (userRepository.existsByEmail(request.getEmail())){
-            //throw error
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already exists");
         }
 
+        List<Role> roles = new ArrayList<>();
+        roles.add(request.getRole() != null ? request.getRole() : Role.STUDENT);
 
+        User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .status("OFFLINE") // Set explicitly
+                .roles(roles)
+                .build();
 
-        User new_user=User.builder().
-                firstName(request.getFirstName()).
-                lastName(request.getLastName()).
-                email(request.getEmail()).
-                password(request.getPassword()).
-                build();
+        User savedUser = userRepository.save(user);
 
-        //implicit USER classic
-        List<String> roles = new ArrayList<>();
-        roles.add("ROLE_USER");
-        new_user.setRoles(roles);
+        // Restul logicii pentru profile și preferințe
+        // ...
+        User new_user = userRepository.save(savedUser);
 
-        userRepository.save(new_user);
-
+        // Restul logicii pentru profile și preferințe
+        // ...
         //build based on request and save NotPref
         NotificationPreferencesDto prefNDTO=request.getNotificationPreferences();
         NotificationPreferences prefNtoBeSaved=NotificationPreferences.builder().
@@ -80,9 +83,125 @@ public class RegisterService {
                 build();
         this.userProfileRepository.save(new_profile);
         //make response
-        return new_user;
-
+        return savedUser;
     }
+
+
+//    public User registerUser(RegisterUserRequest request) {
+//        if (!request.getPassword().equals(request.getConfirmPassword())) {
+//            throw new PasswordMismatchException("Passwords do not match");
+//        }
+//        if (userRepository.existsByEmail(request.getEmail())) {
+//            throw new EmailAlreadyExistsException("Email already exists");
+//        }
+//
+//        // Inițializează lista de roluri
+//        List<Role> roles = new ArrayList<>();
+//        if(request.getRole() == null) {
+//            roles.add(Role.STUDENT); // Rol implicit
+//        } else {
+//            roles.add(request.getRole());
+//        }
+//
+//        User savedUser = User.builder()
+//                .firstName(request.getFirstName())
+//                .lastName(request.getLastName())
+//                .email(request.getEmail())
+//                .password(request.getPassword())
+//                .status(Status.OFFLINE) // Folosește direct enum-ul
+//                .roles(roles)
+//                .build();
+//        User new_user = userRepository.save(savedUser);
+//
+//        // Restul logicii pentru profile și preferințe
+//        // ...
+//        //build based on request and save NotPref
+//        NotificationPreferencesDto prefNDTO=request.getNotificationPreferences();
+//        NotificationPreferences prefNtoBeSaved=NotificationPreferences.builder().
+//                user(new_user).email(prefNDTO.isEmail()).push(prefNDTO.isPush()).
+//                desktop(prefNDTO.isDesktop()).build();
+//        this.notificationPreferencesRepository.save(prefNtoBeSaved);
+//
+//
+//        UserProfile new_profile=UserProfile.builder()
+//                .institution(request.getInstitution())
+//                .user(new_user).
+//                studyLevel(request.getStudyLevel()).
+//                specialization(request.getSpecialization())
+//                .year(request.getYear()).
+//                group(request.getGroup()).
+//                bio(request.getBio()).
+//                phoneNumber(request.getPhoneNumber()).
+//                termsAccepted(request.isTermsAccepted()).
+//                privacyPolicyAccepted(request.isPrivacyPolicyAccepted()).
+//                build();
+//        this.userProfileRepository.save(new_profile);
+//        //make response
+//        return new_user;
+//
+//
+//    }
+
+
+//    public User registerUser(RegisterUserRequest request){
+//
+//        if (!request.getPassword().equals(request.getConfirmPassword())){
+//            //throw error
+//            throw new PasswordMismatchException("Passwords do not match");
+//        }
+//        if (userRepository.existsByEmail(request.getEmail())){
+//            //throw error
+//            throw new EmailAlreadyExistsException("Email already exists");
+//        }
+//
+//
+//
+//        User new_user=User.builder().
+//                firstName(request.getFirstName()).
+//                lastName(request.getLastName()).
+//                email(request.getEmail()).
+//                password(request.getPassword()).
+//                status(Status.OFFLINE)
+//                .roles(List.of(request.getRole())).
+//                build();
+//
+//        List<Role> roles = new ArrayList<>();
+//        if(request.getRole()==null){
+//            //implicit STUDENT classic
+//            roles.add(Role.STUDENT);
+//            new_user.setRoles(roles);
+//        }
+//
+//        roles.add(request.getRole());
+//        new_user.setRoles(roles);
+//
+//        userRepository.save(new_user);
+//
+//        //build based on request and save NotPref
+//        NotificationPreferencesDto prefNDTO=request.getNotificationPreferences();
+//        NotificationPreferences prefNtoBeSaved=NotificationPreferences.builder().
+//                user(new_user).email(prefNDTO.isEmail()).push(prefNDTO.isPush()).
+//                desktop(prefNDTO.isDesktop()).build();
+//        this.notificationPreferencesRepository.save(prefNtoBeSaved);
+//
+//
+//        UserProfile new_profile=UserProfile.builder()
+//                .institution(request.getInstitution())
+//                .user(new_user).
+//                studyLevel(request.getStudyLevel()).
+//                specialization(request.getSpecialization())
+//                .year(request.getYear()).
+//                group(request.getGroup()).
+//                bio(request.getBio()).
+//                phoneNumber(request.getPhoneNumber()).
+//                termsAccepted(request.isTermsAccepted()).
+//                privacyPolicyAccepted(request.isPrivacyPolicyAccepted()).
+//                build();
+//        this.userProfileRepository.save(new_profile);
+//        //make response
+//        return new_user;
+//
+//    }
     public boolean uploadProfileImage(MultipartFile profileImage){
         //if the upload succeded move forward
         return true;

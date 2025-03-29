@@ -1,5 +1,6 @@
 package com.sabinghost19.teamslkghostapp.services;
 
+import com.sabinghost19.teamslkghostapp.enums.Status;
 import com.sabinghost19.teamslkghostapp.model.User;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,7 @@ public class UserService{
             userRepository.save(user);
         });
     }
+
 
     public List<User>getAllUsers(){
         return userRepository.findAll();

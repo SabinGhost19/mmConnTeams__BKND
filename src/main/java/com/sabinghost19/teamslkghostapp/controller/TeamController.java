@@ -5,6 +5,7 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.MessageDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
 import com.sabinghost19.teamslkghostapp.model.Channel;
+import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.model.User;
 import com.sabinghost19.teamslkghostapp.services.ChannelService;
 import com.sabinghost19.teamslkghostapp.services.TeamService;
@@ -17,7 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -80,9 +83,49 @@ public class TeamController {
     }
 
     @PostMapping("/channel")
-    public ResponseEntity<ChannelDTO> createChannel(@RequestBody ChannelDTO channelDTO,@RequestBody TeamDTO teamDTO) {
-            ChannelDTO saved_channel =this.channelService.createChannel(channelDTO,teamDTO);
+    public ResponseEntity<ChannelDTO> createChannel(@RequestBody ChannelDTO channelDTO) {
+        ChannelDTO saved_channel = this.channelService.createChannel(channelDTO);
         return ResponseEntity.ok(saved_channel);
+    }
+
+    @PutMapping("/teams/enter")
+    public ResponseEntity<String> enterTeam(
+            @RequestBody Map<String, String> request,
+            Authentication authentication
+    ) {
+        try {
+            System.out.println("Raw request: " + request);
+            String teamId = request.get("teamId");
+            System.out.println("Received teamId: " + teamId);
+
+            if (teamId == null || teamId.isEmpty()) {
+                return ResponseEntity.badRequest().body("Team ID is required");
+            }
+
+            User user = (User) authentication.getPrincipal();
+            System.out.println("User ID: " + user.getId());
+
+            UUID teamUUID = UUID.fromString(teamId.trim());
+            System.out.println("Converted UUID: " + teamUUID);
+
+            return ResponseEntity.ok(this.teamService.enterTeam(user, teamUUID));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid Team ID format");
+        }
+    }
+
+    private boolean isValidUUID(String str) {
+        String uuidRegex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
+        System.out.println("VALIDDDDDDDD...????");
+        return str.matches(uuidRegex);
+    }
+
+    private UUID convertStringToUUID(String teamId) {
+        if (!isValidUUID(teamId)) {
+            System.out.println("VALIDDDDDDDD...YESSSSSS");
+            return UUID.fromString(teamId);
+        }
+        return UUID.fromString("");
     }
 
     @PostMapping("/teams")

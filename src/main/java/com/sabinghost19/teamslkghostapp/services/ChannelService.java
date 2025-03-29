@@ -5,13 +5,16 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamDTO;
 import com.sabinghost19.teamslkghostapp.model.Channel;
 import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.repository.ChannelRepository;
+import com.sabinghost19.teamslkghostapp.repository.TeamRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
 import com.sabinghost19.teamslkghostapp.repository.FileRepository;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,7 +24,9 @@ public class ChannelService {
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
     private final FileRepository fileRepository;
+    private final TeamRepository teamRepository;
 
+    @Transactional
     public List<ChannelDTO> getChannelsForTeam(UUID teamId) {
 
         return channelRepository.findByTeam_Id(teamId).stream()
@@ -47,10 +52,18 @@ public class ChannelService {
                 .isPrivate(channel.getIsPrivate())
                 .build();
     }
-    public ChannelDTO createChannel(ChannelDTO channelDTO, TeamDTO teamDTO) {
-        Team existingTeam=teamDTO.toEntity(teamDTO);
-        Channel new_channel= channelDTO.toEntity(channelDTO,existingTeam);
-        return channelDTO.toDto(new_channel);
+    @Transactional
+    public ChannelDTO createChannel(ChannelDTO channelDTO) {
+        UUID existingTeamId = channelDTO.getTeamId();
+        Optional<Team> existingTeam = this.teamRepository.findById(existingTeamId);
+
+        if (existingTeam.isEmpty()) {
+            throw new RuntimeException("Team not found with id: " + existingTeamId);
+        }
+
+        Channel new_channel = channelDTO.toEntity(channelDTO, existingTeam.get());
+        Channel savedChannel = channelRepository.save(new_channel);
+        return channelDTO.toDto(savedChannel);
     }
 
     public List<UserDto> getChannelMembers(UUID channelId) {

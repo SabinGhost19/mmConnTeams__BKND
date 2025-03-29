@@ -1,10 +1,8 @@
 package com.sabinghost19.teamslkghostapp.model;
 import com.sabinghost19.teamslkghostapp.enums.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -14,15 +12,20 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @EqualsAndHashCode.Include
     private UUID id;
 
+
+    @ToString.Exclude // Exclude explicit (alternativ la @ToString(exclude))
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
 
     @Column(nullable = false)
     private String institution;

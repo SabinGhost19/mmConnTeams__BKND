@@ -1,6 +1,7 @@
 package com.sabinghost19.teamslkghostapp.config;
 
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserStatusDTO;
+import com.sabinghost19.teamslkghostapp.enums.Status;
 import com.sabinghost19.teamslkghostapp.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,6 @@ public class WebSocketEventListener {
     private final SimpMessagingTemplate messagingTemplate;
     private final UserService userService;
 
-    // Stocăm maparea sesiune -> utilizator
     private final Map<String, Integer> sessionUserMap = new ConcurrentHashMap<>();
 
     @EventListener
@@ -43,9 +43,9 @@ public class WebSocketEventListener {
         if (userId != null) {
             log.info("User disconnected: {}", userId);
 
-            userService.updateStatus(userId, "offline");
+            userService.updateStatus(userId, "OFFLINE");
 
-            UserStatusDTO statusUpdate = new UserStatusDTO(userId, "offline");
+            UserStatusDTO statusUpdate = new UserStatusDTO(userId, "OFFLINE");
             messagingTemplate.convertAndSend("/topic/user-status", statusUpdate);
 
             sessionUserMap.remove(sessionId);

@@ -1,9 +1,11 @@
 package com.sabinghost19.teamslkghostapp.model;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.convertors.PostgreSQLEnumType;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.convertors.StatusConverter;
+import com.sabinghost19.teamslkghostapp.enums.Role;
+import com.sabinghost19.teamslkghostapp.enums.Status;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
+import org.hibernate.annotations.Type;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.time.Instant;
@@ -19,6 +21,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -36,17 +39,37 @@ public class User implements UserDetails {
     @Column(name ="password_hash",nullable = false)
     private String password;
 
-    @Column(nullable = true)
+    @Column(name = "status")
     private String status;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    private List<String> roles = new ArrayList<>();
+    @Enumerated(EnumType.ORDINAL)
+    private List<Role> roles = new ArrayList<>();
+
+
+    public Status getStatusAsEnum() {
+        try {
+            return Status.valueOf(this.status);
+        } catch (IllegalArgumentException e) {
+            return Status.OFFLINE; // valoare implicită
+        }
+    }
+
+    public void setStatusAsEnum(Status status) {
+        this.status = status.name();
+    }
 
     @Column(name = "created_at")
     private Instant createdAt;
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @ToString.Exclude // Exclude explicit (alternativ la @ToString(exclude))
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Include
+    private UserProfile profile;
+
 
     @PrePersist
     protected void onCreate() {
@@ -62,7 +85,7 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(SimpleGrantedAuthority::new)
+                .map(role -> new SimpleGrantedAuthority(role.name()))
                 .collect(Collectors.toList());
     }
 
