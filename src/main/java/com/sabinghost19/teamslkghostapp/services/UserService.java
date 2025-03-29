@@ -1,11 +1,17 @@
 package com.sabinghost19.teamslkghostapp.services;
 
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamUsersMutateDTO;
+import com.sabinghost19.teamslkghostapp.enums.Role;
 import com.sabinghost19.teamslkghostapp.enums.Status;
 import com.sabinghost19.teamslkghostapp.model.User;
+import com.sabinghost19.teamslkghostapp.model.UserProfile;
+import com.sabinghost19.teamslkghostapp.repository.UserProfileRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.sql.exec.ExecutionException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -20,6 +26,39 @@ import java.util.UUID;
 public class UserService{
 
     private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
+
+    @Transactional
+    public void updateStatus(String userIdStr, String status) {
+        try {
+            UUID userId = UUID.fromString(userIdStr);
+            updateStatus(userId, status);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid user ID format");
+        }
+    }
+    public TeamUsersMutateDTO getCurrentUserDto(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        UserProfile userProfile = userProfileRepository.findByUser(user)
+                .orElseThrow(() -> new ExecutionException("User profile not found for user: " + user.getId()));
+
+        return mapToTeamUsersMutateDto(user, userProfile);
+    }
+
+    private TeamUsersMutateDTO mapToTeamUsersMutateDto(User user, UserProfile userProfile) {
+        return TeamUsersMutateDTO.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .status(user.getStatus())
+                .profileImage(userProfile.getProfileImageUrl())
+                .department(userProfile.getSpecialization())
+                .roles(user.getRoles())
+                .build();
+    }
 
     @Transactional
     public void updateStatus(UUID userId, String status) {

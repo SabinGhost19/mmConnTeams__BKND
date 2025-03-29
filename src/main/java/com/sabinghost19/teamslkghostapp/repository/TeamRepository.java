@@ -15,6 +15,8 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     @Query("SELECT DISTINCT tm.team FROM TeamMember tm WHERE tm.user.id = :userId")
     List<Team> findTeamsByUserId(@Param("userId") UUID userId);
 
+
+
     @Query("SELECT t FROM Team t WHERE t.name = :teamName")
     Optional<Team> findByName(String teamName);
 

@@ -8,11 +8,13 @@ import com.sabinghost19.teamslkghostapp.enums.Status;
 import com.sabinghost19.teamslkghostapp.model.User;
 import com.sabinghost19.teamslkghostapp.services.TeamService;
 import com.sabinghost19.teamslkghostapp.services.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -38,17 +40,27 @@ public class UserController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<?> getCurrentUser(Authentication authentication, HttpServletRequest request) {
-        if (authentication != null && authentication.isAuthenticated()) {
-            UUID userId = (UUID) request.getAttribute("userId");
-            if (userId == null) {
-                return ResponseEntity.status(401).body("User ID not found");
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "User not authenticated"));
             }
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            return ResponseEntity.ok(userService.getUserByEmail(userDetails.getUsername()));
+            TeamUsersMutateDTO userDto = userService.getCurrentUserDto(userDetails.getUsername());
+
+            return ResponseEntity.ok(userDto);
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User profile not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch user data"));
         }
-        return ResponseEntity.status(401).body("User not authenticated");
     }
 
     @GetMapping
@@ -57,7 +69,6 @@ public class UserController {
             return ResponseEntity.status(401).body("User not authenticated");
         }
 
-        // Try to get userId from the authentication principal
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User user = (User) userDetails;
 

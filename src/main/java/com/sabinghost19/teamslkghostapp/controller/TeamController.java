@@ -1,9 +1,6 @@
 package com.sabinghost19.teamslkghostapp.controller;
 
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.ChannelDTO;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.MessageDTO;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamDTO;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.*;
 import com.sabinghost19.teamslkghostapp.model.Channel;
 import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.model.User;
@@ -36,6 +33,17 @@ public class TeamController {
     public TeamController(TeamService teamService, ChannelService channelService) {
         this.channelService = channelService;
         this.teamService = teamService;
+    }
+
+    @GetMapping("/users/team-mates")
+    public ResponseEntity<List<TeamUsersMutateDTO>> getUsersInSameTeams(
+            @RequestAttribute("userId") UUID userId,
+            Authentication authentication) {
+
+        User currentUser = (User) authentication.getPrincipal();
+        List<TeamUsersMutateDTO> teamMates = teamService.getUsersInSameTeams(currentUser.getId());
+
+        return ResponseEntity.ok(teamMates);
     }
 
     @GetMapping("/teams")

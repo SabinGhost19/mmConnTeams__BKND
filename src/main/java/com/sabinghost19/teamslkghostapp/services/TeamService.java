@@ -33,6 +33,30 @@ public class TeamService {
         this.teamMemberRepository = teamMemberRepository;
     }
 
+    public List<TeamUsersMutateDTO> getUsersInSameTeams(UUID userId) {
+        List<User> teamMates = userRepository.findUsersInTeamsWithProfileAndRoles(
+                teamMemberRepository.findTeamIdsByUserId(userId),
+                userId
+        );
+        return teamMates.stream()
+                .map(this::mapToTeamUsersMutateDto)
+                .collect(Collectors.toList());
+    }
+    private TeamUsersMutateDTO mapToTeamUsersMutateDto(User user) {
+        UserProfile profile = user.getProfile();
+
+        return TeamUsersMutateDTO.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .status(user.getStatus())
+                .profileImage(profile != null ? profile.getProfileImageUrl() : null)
+                .department(profile != null ? profile.getSpecialization() : "N/A")
+                .roles(user.getRoles() != null ? user.getRoles() : List.of())
+                .build();
+    }
+
     public String enterTeam(User user, UUID teamId) {
 
         boolean isMemberAlready = teamMemberRepository.existsByTeamIdAndUserId(teamId, user.getId());

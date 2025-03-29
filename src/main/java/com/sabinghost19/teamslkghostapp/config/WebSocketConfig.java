@@ -59,41 +59,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor =
-                        MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-                assert accessor != null;
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+                    String token = accessor.getFirstNativeHeader("Authorization");
 
-                    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                        String token = authorizationHeader.substring(7);
+                    if (token != null && token.startsWith("Bearer ")) {
+                        String jwt = token.substring(7);
+                        UUID userId = jwtUtils.getUserIdFromToken(jwt); // Metoda trebuie să returneze String
 
-                        // Extras ID-ul utilizatorului din token
-                        UUID userId = jwtUtils.getUserIdFromToken(token);
-                        System.out.println("USER ID EXTRAS..."+userId);
                         if (userId != null) {
-                            // Adaugă ID-ul utilizatorului în atributele sesiunii
-                            Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
-                            if (sessionAttributes != null) {
-                                System.out.println("USER ID EXTRAS...22 la setting..."+userId);
-                                sessionAttributes.put("userId", userId);
-                            }
-
-                            // Continuă cu autentificarea existentă
-                            String username = jwtUtils.getUsernameFromToken(token);
-                            System.out.println("Username este>..extras din jwt token: "+username);
-
-                            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
-                                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-                            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-                            accessor.setUser(usernamePasswordAuthenticationToken);
+                            accessor.getSessionAttributes().put("userId", userId);
                         }
                     }
                 }
-
                 return message;
             }
         });

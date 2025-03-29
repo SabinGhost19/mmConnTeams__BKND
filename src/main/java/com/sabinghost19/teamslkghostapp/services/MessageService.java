@@ -25,6 +25,33 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
+//@Service
+//public class MessageService {
+//    public MessageDTO saveMessage(MessageDTO messageDTO) {
+//        Message message = new Message();
+//        message.setId(UUID.randomUUID().toString()); // Generare UUID string
+//        message.setSenderId(messageDTO.getSenderId());
+//        message.setChannelId(messageDTO.getChannelId());
+//        message.setContent(messageDTO.getContent());
+//
+//        Message saved = messageRepository.save(message);
+//        return mapToDTO(saved);
+//    }
+//
+//    private MessageDTO mapToDTO(Message message) {
+//        MessageDTO dto = new MessageDTO();
+//        dto.setId(message.getId());
+//        dto.setSenderId(message.getSenderId());
+//        dto.setChannelId(message.getChannelId());
+//        dto.setContent(message.getContent());
+//        dto.setCreatedAt(message.getCreatedAt());
+//        return dto;
+//    }
+//}
+//public interface MessageRepository extends JpaRepository<Message, String> {
+//    List<Message> findByChannelId(String channelId);
+//}
 @Service
 @RequiredArgsConstructor
 @Slf4j

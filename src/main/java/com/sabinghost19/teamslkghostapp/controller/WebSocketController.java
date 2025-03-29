@@ -5,11 +5,14 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.TypingDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserStatusDTO;
 import com.sabinghost19.teamslkghostapp.enums.Status;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -17,199 +20,114 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.sabinghost19.teamslkghostapp.services.MessageService;
 import com.sabinghost19.teamslkghostapp.services.ReactionService;
 import com.sabinghost19.teamslkghostapp.services.UserService;
-
 @Controller
 @Slf4j
 public class WebSocketController {
-
+    private final Map<String, String> sessionUserMap = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> userChannelsMap = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> channelSubscriptionsMap = new ConcurrentHashMap<>();
     private final SimpMessagingTemplate messagingTemplate;
-    private final MessageService messageService;
-    private final ReactionService reactionService;
     private final UserService userService;
+    private final MessageService messageService;
 
-    public WebSocketController(SimpMessagingTemplate messagingTemplate, MessageService messageService, ReactionService reactionService, UserService userService) {
+    @Autowired
+    public WebSocketController(SimpMessagingTemplate messagingTemplate,
+                               UserService userService,
+                               MessageService messageService) {
         this.messagingTemplate = messagingTemplate;
-        this.messageService = messageService;
-        this.reactionService = reactionService;
         this.userService = userService;
+        this.messageService = messageService;
     }
-
-    // Maparea sesiunilor la utilizatori
-    private final Map<String, UUID> sessionUserMap = new ConcurrentHashMap<>();
-
-    // Maparea canalelor active per sesiune
-    private final Map<String, Set<Integer>> userChannelsMap = new ConcurrentHashMap<>();
 
     @MessageMapping("/authenticate")
     public void authenticate(@Payload Map<String, Object> payload,
                              SimpMessageHeaderAccessor headerAccessor) {
-        UUID userId = (UUID) payload.get("userId");
-        if (userId != null && headerAccessor.getSessionId() != null) {
-            log.info("User {} authenticated via WebSocket", userId);
+        String userIdStr = (String) payload.get("userId");
+        if (userIdStr != null && headerAccessor.getSessionId() != null) {
+            try {
+                UUID userId = UUID.fromString(userIdStr);
+                sessionUserMap.put(headerAccessor.getSessionId(), userIdStr);
 
-            // Salvează ID-ul utilizatorului în sesiune
-            headerAccessor.getSessionAttributes().put("userId", userId);
-            sessionUserMap.put(headerAccessor.getSessionId(),userId);
+                userService.updateStatus(userId, "ONLINE");
 
-            // Actualizează statusul utilizatorului
-            userService.updateStatus(UUID.fromString(userId.toString()), "ONLINE");
-
-            // Notifică toți utilizatorii despre schimbarea de status
-            UserStatusDTO statusUpdate = new UserStatusDTO(UUID.fromString(userId.toString()),"ONLINE");
-            messagingTemplate.convertAndSend("/topic/user-status", statusUpdate);
+                messagingTemplate.convertAndSend("/topic/user-status",
+                        Map.of("userId", userIdStr, "status", "ONLINE"));
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid UUID format: {}", userIdStr);
+            }
         }
     }
 
-    /**
-     * Utilizatorul se alătură unui canal
-     */
     @MessageMapping("/join-channel")
-    public void joinChannel(@Payload Integer channelId,
+    public void joinChannel(@Payload String channelId,
                             SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
-        UUID userId = sessionUserMap.get(sessionId);
+        String userId = sessionUserMap.get(sessionId);
 
-        if (userId != null) {
-            log.info("User {} joined channel {}", userId, channelId);
-
-            // Adaugă canalul la lista de canale ale utilizatorului
+        if (userId != null && channelId != null) {
             userChannelsMap.computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
                     .add(channelId);
 
-            // Verifică dacă utilizatorul are permisiunea de a accesa acest canal
-            // (acest cod ar trebui implementat în funcție de logica aplicației)
+            channelSubscriptionsMap.computeIfAbsent(channelId, k -> ConcurrentHashMap.newKeySet())
+                    .add(sessionId);
+
+            log.info("User {} joined channel {}", userId, channelId);
         }
     }
 
-    /**
-     * Utilizatorul părăsește un canal
-     */
-    @MessageMapping("/leave-channel")
-    public void leaveChannel(@Payload UUID channelId,
-                             SimpMessageHeaderAccessor headerAccessor) {
-        String sessionId = headerAccessor.getSessionId();
-        if (sessionId != null && userChannelsMap.containsKey(sessionId)) {
-            userChannelsMap.get(sessionId).remove(channelId);
-            log.info("User left channel {}", channelId);
-        }
-    }
-
-    /**
-     * Utilizatorul se focusează pe un canal (pentru a marca mesajele ca citite)
-     */
-    @MessageMapping("/focus-channel")
-    public void focusChannel(@Payload UUID channelId,
-                             SimpMessageHeaderAccessor headerAccessor) {
-        String sessionId = headerAccessor.getSessionId();
-        UUID userInteger = sessionUserMap.get(sessionId);
-        UUID userId = UUID.fromString(userInteger.toString());
-
-        if (userId != null) {
-            log.info("User {} focused on channel {}", userId, channelId);
-
-            // Marchează mesajele necitite ca fiind citite
-            messageService.markMessagesAsRead(channelId, userId);
-
-            // Actualizează contorul de necitite pentru frontend
-            messagingTemplate.convertAndSend(
-                    "/topic/channel/" + channelId + "/read-status",
-                    Map.of("userId", userId, "channelId", channelId, "unreadCount", 0)
-            );
-        }
-    }
-
-    /**
-     * Utilizatorul părăsește focusul de pe un canal
-     */
-    @MessageMapping("/unfocus-channel")
-    public void unfocusChannel(@Payload UUID channelId,
-                               SimpMessageHeaderAccessor headerAccessor) {
-        // Opțional - poate fi folosit pentru a marca momentul când utilizatorul
-        // nu mai este activ într-un canal
-        log.info("User unfocused from channel {}", channelId);
-    }
-
-    /**
-     * Trimite un mesaj nou
-     */
     @MessageMapping("/send-message")
-    public void sendMessage(@Payload MessageDTO messageDTO,
+    public void sendMessage(@Payload Map<String, Object> messageData,
                             SimpMessageHeaderAccessor headerAccessor) {
-        String sessionId = headerAccessor.getSessionId();
-        UUID userId = sessionUserMap.get(sessionId);
+        String userIdStr = sessionUserMap.get(headerAccessor.getSessionId());
+        String channelIdStr = (String) messageData.get("channelId");
 
-        if (userId != null && userId.equals(messageDTO.getSenderId())) {
-            log.info("Received message for channel {}", messageDTO.getChannelId());
+        if (userIdStr != null && channelIdStr != null) {
+            try {
+                UUID userId = UUID.fromString(userIdStr);
+                UUID channelId = UUID.fromString(channelIdStr);
 
-            // Salvează mesajul în baza de date
-            MessageDTO savedMessage = messageService.saveMessage(messageDTO);
+                MessageDTO messageDTO = new MessageDTO();
+                messageDTO.setSenderId(userId);
+                messageDTO.setChannelId(channelId);
+                messageDTO.setContent((String) messageData.get("content"));
 
-            // Transmite mesajul tuturor utilizatorilor abonați la acest canal
-            messagingTemplate.convertAndSend("/topic/channel/" + messageDTO.getChannelId(), savedMessage);
-        }
-    }
+                MessageDTO savedMessage = messageService.saveMessage(messageDTO);
 
-    /**
-     * Gestionează reacțiile la mesaje
-     */
-    @MessageMapping("/message-reaction")
-    public void handleReaction(@Payload ReactionDTO reactionDTO,
-                               SimpMessageHeaderAccessor headerAccessor) {
-        String sessionId = headerAccessor.getSessionId();
-        UUID userId = sessionUserMap.get(sessionId);
 
-        if (userId != null && userId.equals(reactionDTO.getUserId())) {
-            log.info("Received reaction {} for message {}", reactionDTO.getReactionType(), reactionDTO.getMessageId());
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", savedMessage.getId().toString());
+                response.put("senderId", savedMessage.getSenderId().toString());
+                response.put("channelId", savedMessage.getChannelId().toString());
+                response.put("content", savedMessage.getContent());
 
-            // Procesează reacția (adaugă sau elimină)
-            if ("add".equals(reactionDTO.getAction())) {
-                reactionService.addReaction(reactionDTO);
-            } else if ("remove".equals(reactionDTO.getAction())) {
-                reactionService.removeReaction(reactionDTO);
+                messagingTemplate.convertAndSend("/topic/channel/" + channelIdStr, response);
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid UUID format: userId={}, channelId={}", userIdStr, channelIdStr);
             }
-
-            // Transmite actualizarea reacției tuturor utilizatorilor din canal
-            messagingTemplate.convertAndSend("/topic/channel/" + reactionDTO.getChannelId(), reactionDTO);
         }
     }
 
-    /**
-     * Gestionează indicatorii de typing
-     */
-    @MessageMapping("/typing-indicator")
-    public void handleTypingIndicator(@Payload TypingDTO typingDTO,
-                                      SimpMessageHeaderAccessor headerAccessor) {
-        String sessionId = headerAccessor.getSessionId();
-        UUID userId = sessionUserMap.get(sessionId);
-
-        if (userId != null && userId.equals(typingDTO.getUserId())) {
-            // Transmite indicatorul de typing către toți utilizatorii din canal
-            messagingTemplate.convertAndSend(
-                    "/topic/channel/" + typingDTO.getChannelId() + "/typing",
-                    typingDTO
-            );
-        }
-    }
-
-    /**
-     * Actualizează statusul utilizatorului
-     */
-    @MessageMapping("/update-status")
-    public void updateStatus(@Payload UserStatusDTO statusDTO,
+    @MessageMapping("/focus-channel")
+    public void focusChannel(@Payload String channelIdStr,
                              SimpMessageHeaderAccessor headerAccessor) {
-        String sessionId = headerAccessor.getSessionId();
-        UUID userInteger = sessionUserMap.get(sessionId);
-        UUID userId = UUID.fromString(userInteger.toString());
+        String userIdStr = sessionUserMap.get(headerAccessor.getSessionId());
 
-        if (userId != null && userId.equals(statusDTO.getUserId())) {
-            log.info("Updating status for user {} to {}", userId, statusDTO.getStatus());
+        if (userIdStr != null && channelIdStr != null) {
+            try {
+                UUID userId = UUID.fromString(userIdStr);
+                UUID channelId = UUID.fromString(channelIdStr);
 
-            // Actualizează statusul în baza de date
-            userService.updateStatus(userId, statusDTO.getStatus());
+                messageService.markMessagesAsRead(channelId, userId);
 
-            // Notifică toți utilizatorii despre schimbarea de status
-            messagingTemplate.convertAndSend("/topic/user-status", statusDTO);
+                messagingTemplate.convertAndSend("/topic/channel/" + channelIdStr + "/read-status",
+                        Map.of(
+                                "userId", userIdStr,
+                                "channelId", channelIdStr,
+                                "unreadCount", 0
+                        ));
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid UUID format: userId={}, channelId={}", userIdStr, channelIdStr);
+            }
         }
     }
 }
-

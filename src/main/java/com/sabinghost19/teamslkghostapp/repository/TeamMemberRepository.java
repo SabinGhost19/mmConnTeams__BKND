@@ -11,6 +11,9 @@ import java.util.UUID;
 
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Integer> {
 
+    @Query("SELECT tm.team.id FROM TeamMember tm WHERE tm.user.id = :userId")
+    List<UUID> findTeamIdsByUserId(@Param("userId") UUID userId);
+
     boolean existsByTeamIdAndUserId(UUID teamId, UUID userId);
 
     List<TeamMember> findByTeamId(UUID teamId);

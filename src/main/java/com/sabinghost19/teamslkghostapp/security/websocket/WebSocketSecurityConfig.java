@@ -6,11 +6,10 @@ import org.springframework.security.config.annotation.web.socket.AbstractSecurit
 
 @Configuration
 public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
-
     @Override
     protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
         messages
-                .nullDestMatcher().permitAll() // Permite accesul anonim la handshake WebSocket
+                .simpDestMatchers("/app/authenticate").permitAll()
                 .simpDestMatchers("/app/**").authenticated()
                 .simpSubscribeDestMatchers("/topic/**", "/user/**").authenticated()
                 .anyMessage().denyAll();
@@ -18,6 +17,6 @@ public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBro
 
     @Override
     protected boolean sameOriginDisabled() {
-        return true;
+        return true; // Pentru dezvoltare
     }
 }
