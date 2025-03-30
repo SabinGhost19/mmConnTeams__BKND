@@ -33,6 +33,11 @@ public class MessageController {
         return ResponseEntity.ok(messageService.getChannelMessages(channelId));
     }
 
+    @GetMapping("/channels/{channelId}/unread-count")
+    public ResponseEntity<Integer> getChannelMessagesUnreadCount(@PathVariable UUID channelId) {
+        return ResponseEntity.ok(messageService.getUnreadMessages(channelId));
+    }
+
 
     @GetMapping("/channels/{channelId}/messages/after/{timestamp}")
     public ResponseEntity<List<MessageDTO>> getNewMessages(

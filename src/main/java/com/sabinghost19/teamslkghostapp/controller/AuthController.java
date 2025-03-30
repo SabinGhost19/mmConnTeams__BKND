@@ -6,6 +6,7 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.request.RegisterUser
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.LoginUserReponseDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RefreshTokenResponseDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RegisterUserResponseDTO;
+import com.sabinghost19.teamslkghostapp.security.jwt.JwtTokenProvider;
 import com.sabinghost19.teamslkghostapp.services.LoginService;
 import com.sabinghost19.teamslkghostapp.services.RegisterService;
 import jakarta.validation.Valid;
@@ -31,12 +32,33 @@ public class AuthController {
 
     private final RegisterService registerService;
     private final LoginService loginService;
+    private final JwtTokenProvider jwtTokenProvider;
     private final Logger logger = Logger.getLogger(AuthController.class.getName());
 
     @Autowired
-    public AuthController(RegisterService registerService, LoginService loginService) {
+    public AuthController(RegisterService registerService, LoginService loginService,JwtTokenProvider jwtTokenProvider) {
          this.registerService=registerService;
          this.loginService=loginService;
+         this.jwtTokenProvider=jwtTokenProvider;
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<Map<String, Object>> validateToken(@RequestHeader("Authorization") String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.put("valid", false);
+            response.put("message", "Authorization header missing or invalid");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String token = authHeader.substring(7);
+        boolean isValid = jwtTokenProvider.validateToken(token);
+
+        response.put("valid", isValid);
+        response.put("message", isValid ? "Token is valid" : "Token is invalid");
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")

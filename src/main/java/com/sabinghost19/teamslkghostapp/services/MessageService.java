@@ -7,6 +7,7 @@ import com.sabinghost19.teamslkghostapp.model.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +77,11 @@ public class MessageService  {
         this.fileRepository = fileRepository;
     }
 
+    public Integer getUnreadMessages(UUID channelId){
+        System.out.println("Channel ID: ");
+        System.out.println(channelId);
+        return 0;
+    }
     public MessageDTO getMessage(UUID id) {
 
         Optional<Message> messageOptional = messageRepository.findById(id);
@@ -90,7 +96,6 @@ public class MessageService  {
 
     @Transactional
     public MessageDTO saveMessage(MessageDTO messageDTO) {
-
         Channel channel = channelRepository.findById(messageDTO.getChannelId())
                 .orElseThrow(() -> new EntityNotFoundException("Channel not found"));
 
@@ -103,12 +108,10 @@ public class MessageService  {
         message.setContent(messageDTO.getContent());
 
         LocalDateTime now = LocalDateTime.now();
-        message.setCreatedAt(Instant.from(now));
-        message.setUpdatedAt(Instant.from(now));
-
+        message.setCreatedAt(now.atZone(ZoneId.systemDefault()).toInstant());
+        message.setUpdatedAt(now.atZone(ZoneId.systemDefault()).toInstant());
 
         Message savedMessage = messageRepository.save(message);
-
 
         return convertToDTO(savedMessage);
     }
