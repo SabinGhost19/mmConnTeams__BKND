@@ -1,18 +1,13 @@
 package com.sabinghost19.teamslkghostapp.controller;
 
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.AttachmentDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.FileDTO;
-import com.sabinghost19.teamslkghostapp.repository.FileRepository;
-import com.sabinghost19.teamslkghostapp.repository.TeamRepository;
 import com.sabinghost19.teamslkghostapp.services.FileService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
@@ -23,7 +18,7 @@ import java.util.UUID;
 public class FileController {
 
     private final FileService fileService;
-
+    private static final Logger logger = LoggerFactory.getLogger(FileController.class);
     @Autowired
     public FileController(FileService fileService) {
         this.fileService = fileService;
@@ -34,7 +29,11 @@ public class FileController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("team_id") UUID teamId,
             @RequestParam("channel_id") UUID channelId,
-            @RequestParam("uploaded_by") UUID uploadedBy) {
+            @RequestAttribute("userId") UUID  uploadedBy) {
+
+        //logging
+        logger.info(String.valueOf(uploadedBy));
+        logger.info(file.getOriginalFilename());
 
         /// /!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //de revizuit conflicte cu AttachementDTO

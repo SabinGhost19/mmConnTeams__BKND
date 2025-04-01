@@ -62,44 +62,36 @@ public class ReactionService {
     }
 
     @Transactional
-    public ReactionDTO addReaction(UUID messageId, UUID userId, String reactionType) {
-        // Găsim mesajul
+    public void addReaction(ReactionDTO reactionDTO, UUID userId, UUID messageId) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new EntityNotFoundException("Mesajul cu ID-ul " + messageId + " nu a fost găsit"));
 
-        // Găsim utilizatorul
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Utilizatorul cu ID-ul " + userId + " nu a fost găsit"));
 
-        // Obținem canalul din mesaj pentru WebSocket
         Channel channel = message.getChannel();
 
-        // Verificăm dacă reacția există deja
         Optional<Reaction> existingReaction = reactionRepository.findByMessageIdAndUserIdAndReactionType(
-                messageId, userId, reactionType);
+                messageId, userId, reactionDTO.getReactionType());
 
         if (existingReaction.isPresent()) {
-            // Reacția există deja, o returnăm
             ReactionDTO dto = reactionMapper.toDTO(existingReaction.get());
             dto.setAction("add");
-            return dto;
+            return;
         }
 
-        // Creăm și salvăm reacția nouă
         Reaction reaction = Reaction.builder()
                 .message(message)
                 .user(user)
                 .channel(channel)
-                .reactionType(reactionType)
+                .reactionType(reactionDTO.getReactionType())
                 .build();
 
         reaction = reactionRepository.save(reaction);
 
-        // Convertim la DTO și setăm acțiunea
         ReactionDTO dto = reactionMapper.toDTO(reaction);
         dto.setAction("add");
 
-        return dto;
     }
 
     @Transactional
@@ -119,7 +111,7 @@ public class ReactionService {
         return dto;
     }
 
-
+    @Transactional
     public List<ReactionDTO> getReactionsForMessage(UUID messageId) {
         List<Reaction> reactions = reactionRepository.findByMessageId(messageId);
 

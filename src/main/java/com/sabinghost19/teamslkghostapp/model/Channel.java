@@ -1,10 +1,7 @@
 package com.sabinghost19.teamslkghostapp.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -15,20 +12,27 @@ import java.util.UUID;
 @Table(name = "channels", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"team_id", "name"})
 })
-@Data
+@Getter
+@Setter
+@ToString(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Channel {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
+    @ToString.Exclude
     private Team team;
 
     @Column(nullable = false)
+    @ToString.Include
     private String name;
 
     @Column(columnDefinition = "TEXT")
@@ -44,9 +48,11 @@ public class Channel {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private Set<Message> messages = new HashSet<>();
 
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private Set<ChannelMember> members = new HashSet<>();
 
     @PrePersist

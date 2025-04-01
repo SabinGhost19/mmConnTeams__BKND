@@ -9,10 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.sabinghost19.teamslkghostapp.repository.*;
@@ -82,6 +79,7 @@ public class MessageService  {
         System.out.println(channelId);
         return 0;
     }
+
     public MessageDTO getMessage(UUID id) {
 
         Optional<Message> messageOptional = messageRepository.findById(id);
@@ -116,8 +114,17 @@ public class MessageService  {
         return convertToDTO(savedMessage);
     }
 
+//    @Transactional
+//    public List<MessageDTO> getChannelMessages(UUID channelId) {
+//        List<Message> messages = messageRepository.findByChannel_IdOrderByCreatedAtAsc(channelId);
+//        return messages.stream()
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+
+    @Transactional
     public List<MessageDTO> getChannelMessages(UUID channelId) {
-        List<Message> messages = messageRepository.findByChannel_IdOrderByCreatedAtAsc(channelId);
+        List<Message> messages = messageRepository.findByChannelIdWithAll(channelId);
         return messages.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -166,7 +173,6 @@ public class MessageService  {
                 .collect(Collectors.toList());
     }
 
-
     public void addAttachmentToMessage(UUID messageId, UUID attachmentId) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new EntityNotFoundException("Mesajul cu ID-ul " + messageId + " nu a fost găsit"));
@@ -181,14 +187,26 @@ public class MessageService  {
         messageRepository.save(message);
     }
 
+
+
     public MessageDTO convertToDTO(Message message) {
         MessageDTO dto = new MessageDTO();
 
-        dto.setId(message.getId()!=null?message.getId():UUID.randomUUID());
+        dto.setId(message.getId() != null ? message.getId() : UUID.randomUUID());
 
-        dto.setChannelId(message.getChannel().getId()!=null?message.getChannel().getId():UUID.randomUUID());
+        // Safely access channel ID
+        if (message.getChannel() != null) {
+            dto.setChannelId(message.getChannel().getId() != null ? message.getChannel().getId() : UUID.randomUUID());
+        } else {
+            dto.setChannelId(UUID.randomUUID());
+        }
 
-        dto.setSenderId(message.getSender().getId()!=null?message.getSender().getId():UUID.randomUUID());
+        // Safely access sender ID
+        if (message.getSender() != null) {
+            dto.setSenderId(message.getSender().getId() != null ? message.getSender().getId() : UUID.randomUUID());
+        } else {
+            dto.setSenderId(UUID.randomUUID());
+        }
 
         dto.setContent(message.getContent());
 
@@ -198,36 +216,77 @@ public class MessageService  {
         dto.setUpdatedAt(message.getUpdatedAt() != null ?
                 LocalDateTime.ofInstant(message.getUpdatedAt(), ZoneOffset.UTC) : null);
 
-        dto.setAttachments(message.getAttachments().stream()
-                .map(attachment -> {
-                    FileDTO attachmentDTO = new FileDTO();
-                    attachmentDTO.setFileName(attachment.getFileName());
-                    attachmentDTO.setTeamId(attachment.getTeam().getId());
-                    attachmentDTO.setChannelId(attachment.getChannel().getId());
-                    attachmentDTO.setUploadedAt(attachment.getUploadedAt());
-                    attachmentDTO.setFileSize(attachment.getFileSize());
-                    attachmentDTO.setUploadedById(attachment.getUploadedBy().getId());
-                    attachmentDTO.setUrl(attachment.getUrl());
-                    attachmentDTO.setFileType(attachment.getFileType());
-                    attachmentDTO.setAwsS3Key(attachment.getAwsS3Key());
-                    return attachmentDTO;
-                })
-                .collect(Collectors.toList()));
+        // Convert attachments safely
+        if (message.getAttachments() != null) {
+            dto.setAttachments(message.getAttachments().stream()
+                    .filter(Objects::nonNull) // Filter out null attachments
+                    .map(attachment -> {
+                        FileDTO attachmentDTO = new FileDTO();
+                        attachmentDTO.setFileName(attachment.getFileName());
 
+                        // Safely access team ID
+                        if (attachment.getTeam() != null) {
+                            attachmentDTO.setTeamId(attachment.getTeam().getId());
+                        }
 
-        dto.setReactions(message.getReactions().stream()
-                .map(reaction -> {
-                    ReactionDTO reactionDTO = new ReactionDTO();
-                    reactionDTO.setId(reaction.getId());
-                    reactionDTO.setMessageId(reaction.getMessage().getId());
-                    reactionDTO.setUserId(reaction.getUser().getId());
-                    reactionDTO.setChannelId(reaction.getChannel().getId());
-                    reactionDTO.setReactionType(reaction.getReactionType());
-                    //null....???
-                    reactionDTO.setAction("");
-                    return reactionDTO;
-                })
-                .collect(Collectors.toList()));
+                        // Safely access channel ID
+                        if (attachment.getChannel() != null) {
+                            attachmentDTO.setChannelId(attachment.getChannel().getId());
+                        }
+
+                        attachmentDTO.setUploadedAt(attachment.getUploadedAt());
+                        attachmentDTO.setFileSize(attachment.getFileSize());
+
+                        // Safely access uploaded by ID
+                        if (attachment.getUploadedBy() != null) {
+                            attachmentDTO.setUploadedById(attachment.getUploadedBy().getId());
+                        }
+
+                        attachmentDTO.setUrl(attachment.getUrl());
+                        attachmentDTO.setFileType(attachment.getFileType());
+                        attachmentDTO.setAwsS3Key(attachment.getAwsS3Key());
+                        return attachmentDTO;
+                    })
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setAttachments(new ArrayList<>());
+        }
+
+        // Convert reactions safely
+        if (message.getReactions() != null) {
+            dto.setReactions(message.getReactions().stream()
+                    .filter(Objects::nonNull) // Filter out null reactions
+                    .map(reaction -> {
+                        ReactionDTO reactionDTO = new ReactionDTO();
+                        reactionDTO.setId(reaction.getId());
+
+                        // Safely access message ID
+                        if (reaction.getMessage() != null) {
+                            reactionDTO.setMessageId(reaction.getMessage().getId());
+                        } else {
+                            reactionDTO.setMessageId(message.getId()); // Use the current message ID
+                        }
+
+                        // Safely access user ID
+                        if (reaction.getUser() != null) {
+                            reactionDTO.setUserId(reaction.getUser().getId());
+                        }
+
+                        // Safely access channel ID
+                        if (reaction.getChannel() != null) {
+                            reactionDTO.setChannelId(reaction.getChannel().getId());
+                        } else if (message.getChannel() != null) {
+                            reactionDTO.setChannelId(message.getChannel().getId()); // Use message's channel ID
+                        }
+
+                        reactionDTO.setReactionType(reaction.getReactionType());
+                        reactionDTO.setAction("add");
+                        return reactionDTO;
+                    })
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setReactions(new ArrayList<>());
+        }
 
         dto.setIsRead(false);
 

@@ -1,6 +1,7 @@
 package com.sabinghost19.teamslkghostapp.services;
 
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamUsersMutateDTO;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
 import com.sabinghost19.teamslkghostapp.enums.Role;
 import com.sabinghost19.teamslkghostapp.enums.Status;
 import com.sabinghost19.teamslkghostapp.model.User;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,9 +71,20 @@ public class UserService{
         });
     }
 
+    public List<UserDto> getAllUserDTOs() {
+        return userRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
 
-    public List<User>getAllUsers(){
-        return userRepository.findAll();
+    private UserDto convertToDTO(User user) {
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setEmail(user.getEmail());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        // Setează doar proprietățile necesare, evitând relațiile ciclice
+        return dto;
     }
 
     public Optional<User> getUserByEmail(String email) {

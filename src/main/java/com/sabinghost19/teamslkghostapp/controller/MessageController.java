@@ -38,7 +38,6 @@ public class MessageController {
         return ResponseEntity.ok(messageService.getUnreadMessages(channelId));
     }
 
-
     @GetMapping("/channels/{channelId}/messages/after/{timestamp}")
     public ResponseEntity<List<MessageDTO>> getNewMessages(
             @PathVariable UUID channelId,
@@ -74,15 +73,17 @@ public class MessageController {
     @PostMapping("/messages/{messageId}/reactions")
     public ResponseEntity<?> addReaction(
             @PathVariable UUID messageId,
-            @RequestBody Map<String, Object> payload) {
+            @RequestBody Map<String, Object> payload,
+    @RequestAttribute("userId") UUID userId) {
 
+        System.out.println("Payload: " + payload.toString()+" USER ID: "+userId);
         ReactionDTO reactionDTO = new ReactionDTO();
         reactionDTO.setMessageId(messageId);
-        reactionDTO.setUserId((UUID) payload.get("user_id"));
+        reactionDTO.setUserId(userId);
         reactionDTO.setReactionType((String) payload.get("reaction_type"));
         reactionDTO.setAction("add");
 
-        reactionService.addReaction(reactionDTO);
+        reactionService.addReaction(reactionDTO,userId,messageId);
         return ResponseEntity.ok().build();
     }
 
@@ -94,7 +95,11 @@ public class MessageController {
 
         ReactionDTO reactionDTO = new ReactionDTO();
         reactionDTO.setMessageId(messageId);
-        reactionDTO.setUserId((UUID)payload.get("user_id"));
+
+        String userIdStr = (String) payload.get("user_id");
+        UUID userId = UUID.fromString(userIdStr);
+        reactionDTO.setUserId(userId);
+
         reactionDTO.setReactionType((String) payload.get("reaction_type"));
         reactionDTO.setAction("remove");
 
@@ -102,9 +107,11 @@ public class MessageController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * Asociază un atașament la un mesaj
-     */
+    @GetMapping("/messages/{messageId}/reactions")
+    public  ResponseEntity<List<ReactionDTO>> getReactionsForMessage(@PathVariable UUID messageId){
+       return ResponseEntity.ok(this.reactionService.getReactionsForMessage(messageId));
+    }
+
     @PostMapping("/messages/{messageId}/attachments")
     public ResponseEntity<?> attachToMessage(
             @PathVariable UUID messageId,

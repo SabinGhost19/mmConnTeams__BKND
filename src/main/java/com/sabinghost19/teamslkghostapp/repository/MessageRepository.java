@@ -12,6 +12,21 @@ import java.util.UUID;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, UUID> {
 
+    @Query("SELECT DISTINCT m FROM Message m " +
+            "LEFT JOIN FETCH m.channel " +
+            "LEFT JOIN FETCH m.sender " +
+            "LEFT JOIN FETCH m.attachments att " +
+            "LEFT JOIN FETCH att.team " +
+            "LEFT JOIN FETCH att.channel " +
+            "LEFT JOIN FETCH att.uploadedBy " +
+            "LEFT JOIN FETCH m.reactions r " +
+            "LEFT JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.channel " +
+            "WHERE m.channel.id = :channelId " +
+            "ORDER BY m.createdAt ASC")
+    List<Message> findByChannelIdWithAll(@Param("channelId") UUID channelId);
+
+
     @Query("SELECT m FROM Message m " +
             "LEFT JOIN MessageReadStatus mrs ON m.id = mrs.message.id AND mrs.user.id = :userId " +
             "WHERE m.channel.id = :channelId AND (mrs.isRead = false OR mrs IS NULL)")
@@ -30,12 +45,12 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             "WHERE m.channel.id = :channelId " +
             "ORDER BY m.createdAt ASC")
     List<Message> findDetailedMessagesByChannelId(
-            @Param("channelId") UUID channelId
+            @Param("channel_Id") UUID channelId
     );
 
     @Query("SELECT m FROM Message m " +
             "WHERE m.channel.id = :channelId AND m.createdAt > :timestamp " +
             "ORDER BY m.createdAt ASC")
-    List<Message> findMessagesAfterTimestamp(@Param("channelId") UUID channelId, @Param("timestamp") Instant timestamp);
+    List<Message> findMessagesAfterTimestamp(@Param("channel_Id") UUID channelId, @Param("timestamp") Instant timestamp);
 
 }

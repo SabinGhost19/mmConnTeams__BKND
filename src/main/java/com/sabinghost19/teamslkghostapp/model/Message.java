@@ -1,38 +1,41 @@
 package com.sabinghost19.teamslkghostapp.model;
 
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-
 @Entity
 @Table(name = "messages")
-@Data
+@Getter
+@Setter
+@ToString(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id", nullable = false)
+    @ToString.Exclude
     private Channel channel;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id")
+    @ToString.Exclude
     private User sender;
 
     @Column(columnDefinition = "TEXT")
+    @ToString.Include
     private String content;
 
     @Column(name = "created_at")
@@ -42,12 +45,15 @@ public class Message {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<File> attachments = new HashSet<>();
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<Reaction> reactions = new HashSet<>();
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<MessageReadStatus> readStatuses = new HashSet<>();
 
     // Helper method to check if a message is read by a specific user

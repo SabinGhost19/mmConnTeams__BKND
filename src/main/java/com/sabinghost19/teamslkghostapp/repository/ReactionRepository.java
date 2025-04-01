@@ -3,6 +3,8 @@ import com.sabinghost19.teamslkghostapp.model.Message;
 import com.sabinghost19.teamslkghostapp.model.Reaction;
 import com.sabinghost19.teamslkghostapp.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,7 +24,8 @@ public interface ReactionRepository extends JpaRepository<Reaction, UUID> {
             String reactionType
     );
 
-    List<Reaction> findByMessageId(UUID messageId);
+    @Query("SELECT r FROM Reaction r JOIN FETCH r.message m JOIN FETCH m.channel WHERE m.id = :messageId")
+    List<Reaction> findByMessageId(@Param("messageId") UUID messageId);
     List<Reaction> findByChannelId(UUID channelId);
     List<Reaction> findByUserId(UUID userId);
     Optional<Reaction> findByMessageIdAndUserIdAndReactionType(
