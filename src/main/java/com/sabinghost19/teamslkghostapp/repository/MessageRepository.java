@@ -27,6 +27,9 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     List<Message> findByChannelIdWithAll(@Param("channelId") UUID channelId);
 
 
+    @Query("SELECT COUNT(m) FROM Message m JOIN m.channel c WHERE c.team.id = :teamId")
+    Integer countByChannelTeamId(@Param("teamId") UUID teamId);
+
     @Query("SELECT m FROM Message m " +
             "LEFT JOIN MessageReadStatus mrs ON m.id = mrs.message.id AND mrs.user.id = :userId " +
             "WHERE m.channel.id = :channelId AND (mrs.isRead = false OR mrs IS NULL)")

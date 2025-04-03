@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +49,17 @@ public class ReactionService {
 
                     return reactionRepository.save(reaction);
                 });
+    }
+    public Integer getReactionCountForTeam(UUID teamId) {
+        return (int) reactionRepository.countByChannelTeamId(teamId);
+    }
+
+    public Integer getNumberOfReactions(){
+        return this.reactionRepository.findAll().size();
+    }
+
+    public Integer getNumberOfReactionsByType(String type) {
+        return this.reactionRepository.countByReactionType(type);
     }
 
     @Transactional
@@ -96,16 +108,13 @@ public class ReactionService {
 
     @Transactional
     public ReactionDTO removeReaction(UUID messageId, UUID userId, String reactionType) {
-        // Găsim reacția
         Reaction reaction = reactionRepository.findByMessageIdAndUserIdAndReactionType(
                         messageId, userId, reactionType)
                 .orElseThrow(() -> new EntityNotFoundException("Reacția nu a fost găsită"));
 
-        // Convertim la DTO înainte de ștergere
         ReactionDTO dto = reactionMapper.toDTO(reaction);
         dto.setAction("remove");
 
-        // Ștergem reacția
         reactionRepository.delete(reaction);
 
         return dto;

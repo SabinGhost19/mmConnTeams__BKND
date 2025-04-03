@@ -42,6 +42,10 @@ public class FileService {
     @Value("${aws.s3.files-prefix}")
     private String filesPrefix;
 
+    public Integer getNumberOfFiles(){
+        return this.fileRepository.findAll().size();
+    }
+
     @Transactional
     public FileDTO uploadFile(
             MultipartFile multipartFile,

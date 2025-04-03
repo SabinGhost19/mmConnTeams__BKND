@@ -9,6 +9,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -92,6 +94,38 @@ public class MessageService  {
         }
     }
 
+    public Integer getNumberOfMessages(){
+        return this.messageRepository.findAll().size();
+    }
+
+    public Integer getNumberOfMessagesFromLastWhatTime(String timeRange) {
+        try {
+            Instant now = Instant.now();
+            Instant targetTime;
+
+            if (timeRange.matches("\"?\\d+[dh]\"?")) {
+                timeRange = timeRange.replace("\"", "");
+
+                int amount = Integer.parseInt(timeRange.substring(0, timeRange.length() - 1));
+                char unit = timeRange.charAt(timeRange.length() - 1);
+
+                if (unit == 'd') {
+                    targetTime = now.minus(amount, ChronoUnit.DAYS);
+                } else {
+                    targetTime = now.minus(amount, ChronoUnit.HOURS);
+                }
+            } else {
+                targetTime = Instant.parse(timeRange);
+            }
+
+            return (int) messageRepository.findAll().stream()
+                    .filter(message -> message.getCreatedAt().isAfter(targetTime))
+                    .count();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid time format. Use ISO-8601 format (e.g., 2025-04-03T10:15:30Z) or periods like '24h', '7d', '30d', '365d'", e);
+        }
+    }
+
     @Transactional
     public MessageDTO saveMessage(MessageDTO messageDTO) {
         Channel channel = channelRepository.findById(messageDTO.getChannelId())
@@ -114,13 +148,6 @@ public class MessageService  {
         return convertToDTO(savedMessage);
     }
 
-//    @Transactional
-//    public List<MessageDTO> getChannelMessages(UUID channelId) {
-//        List<Message> messages = messageRepository.findByChannel_IdOrderByCreatedAtAsc(channelId);
-//        return messages.stream()
-//                .map(this::convertToDTO)
-//                .collect(Collectors.toList());
-//    }
 
     @Transactional
     public List<MessageDTO> getChannelMessages(UUID channelId) {
@@ -128,6 +155,10 @@ public class MessageService  {
         return messages.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    public Integer getMessageCountForTeam(UUID teamId) {
+        return (int)this.messageRepository.countByChannelTeamId(teamId);
     }
 
     @Transactional

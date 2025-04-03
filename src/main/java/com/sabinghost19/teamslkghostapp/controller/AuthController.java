@@ -83,6 +83,9 @@ public class AuthController {
         User user = (User) authentication.getPrincipal();
         loginService.logout(user.getId());
 
+        //set user offline
+        this.loginService.UserOffline(user);
+
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "Logged out successfully");

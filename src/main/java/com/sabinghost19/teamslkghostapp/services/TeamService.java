@@ -33,6 +33,11 @@ public class TeamService {
         this.teamMemberRepository = teamMemberRepository;
     }
 
+    public List<TeamDTO> getAllTeams(){
+        List<Team> teams= this.teamRepository.findAll();
+        return teams.stream().map(team->new TeamDTO().toDto(team)).collect(Collectors.toList());
+    }
+
     public List<TeamUsersMutateDTO> getUsersInSameTeams(UUID userId) {
         List<User> teamMates = userRepository.findUsersInTeamsWithProfileAndRoles(
                 teamMemberRepository.findTeamIdsByUserId(userId),
@@ -115,10 +120,13 @@ public class TeamService {
                         .build())
                 .collect(Collectors.toList());
     }
+    public Team findTeambyId(UUID teamId) {
+        return this.teamRepository.findById(teamId).orElseThrow(() -> new RuntimeException("Team Not Found"));
+    }
 
     public TeamDTO getTeamById(UUID teamId) {
         var team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RuntimeException("Echipă negăsită"));
+                .orElseThrow(() -> new RuntimeException("Team Not Found"));
 
         return TeamDTO.builder()
                 .id(team.getId())

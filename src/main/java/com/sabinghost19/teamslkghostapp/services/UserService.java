@@ -4,6 +4,7 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamUsersMutateDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
 import com.sabinghost19.teamslkghostapp.enums.Role;
 import com.sabinghost19.teamslkghostapp.enums.Status;
+import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.model.User;
 import com.sabinghost19.teamslkghostapp.model.UserProfile;
 import com.sabinghost19.teamslkghostapp.repository.UserProfileRepository;
@@ -39,12 +40,51 @@ public class UserService{
             throw new IllegalArgumentException("Invalid user ID format");
         }
     }
+
+    public List<TeamUsersMutateDTO>getAllTeamsUsers(){
+        return userRepository.findAll().stream()
+                .map(this::getCurrentUserDto)
+                .collect(Collectors.toList());
+    }
+
+    public TeamUsersMutateDTO getCurrentUserDto(User user) {
+
+        UserProfile userProfile = userProfileRepository.findByUser(user)
+                .orElseGet(() -> {
+                    // Creează un profil implicit cu toate câmpurile obligatorii setate
+                    UserProfile newProfile = new UserProfile();
+                    newProfile.setUser(user);
+
+                    // Setează câmpurile obligatorii pentru a evita constrângerile de bază de date
+                    newProfile.setInstitution("Not specified"); // Câmpul institution este obligatoriu
+
+                    // Setează și alte câmpuri obligatorii dacă există
+                    // newProfile.setSomeOtherRequiredField("Default value");
+
+                    return userProfileRepository.save(newProfile);
+                });
+
+        return mapToTeamUsersMutateDto(user, userProfile);
+    }
+
     public TeamUsersMutateDTO getCurrentUserDto(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         UserProfile userProfile = userProfileRepository.findByUser(user)
-                .orElseThrow(() -> new ExecutionException("User profile not found for user: " + user.getId()));
+                .orElseGet(() -> {
+                    // Creează un profil implicit cu toate câmpurile obligatorii setate
+                    UserProfile newProfile = new UserProfile();
+                    newProfile.setUser(user);
+
+                    // Setează câmpurile obligatorii pentru a evita constrângerile de bază de date
+                    newProfile.setInstitution("Not specified"); // Câmpul institution este obligatoriu
+
+                    // Setează și alte câmpuri obligatorii dacă există
+                    // newProfile.setSomeOtherRequiredField("Default value");
+
+                    return userProfileRepository.save(newProfile);
+                });
 
         return mapToTeamUsersMutateDto(user, userProfile);
     }

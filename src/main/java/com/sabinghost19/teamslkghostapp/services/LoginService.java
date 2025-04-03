@@ -10,6 +10,7 @@ import com.sabinghost19.teamslkghostapp.security.jwt.JwtTokenProvider;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RefreshTokenResponseDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.request.RefreshTokenRequest;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -39,7 +40,16 @@ public class LoginService {
         this.tokenProvider = tokenProvider;
     }
 
+    public void UserOnline(User user) {
+        user.setStatus("ONLINE");
+        this.userRepository.save(user);
+    }
 
+    @Transactional
+    public void UserOffline(User user) {
+        user.setStatus("OFFLINE");
+        this.userRepository.save(user);
+    }
 
     public LoginUserReponseDTO login(LoginUserRequest loginRequest) {
         try {
@@ -56,6 +66,9 @@ public class LoginService {
             String jwt = tokenProvider.generateJwtToken(authentication);
 
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+            //must be transactional here
+            this.UserOnline(user);
 
             return LoginUserReponseDTO.builder()
                     .success(true)
@@ -77,7 +90,11 @@ public class LoginService {
         return refreshTokenService.refreshToken(request.getRefreshToken());
     }
 
+    @Transactional
     public void logout(UUID userId) {
+        this.userRepository.findById(userId).ifPresent(user -> {user.setStatus("OFFLINE");
+        this.userRepository.save(user);
+        });
         refreshTokenService.deleteByUserId(userId);
     }
 

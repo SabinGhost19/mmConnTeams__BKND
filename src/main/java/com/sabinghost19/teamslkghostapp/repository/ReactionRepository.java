@@ -18,6 +18,12 @@ public interface ReactionRepository extends JpaRepository<Reaction, UUID> {
             String reactionType
     );
 
+    @Query("SELECT COUNT(r) FROM Reaction r JOIN r.channel c WHERE c.team.id = :teamId")
+    Integer countByChannelTeamId(@Param("teamId") UUID teamId);
+
+    @Query("SELECT COUNT(r) FROM Reaction r WHERE r.reactionType = :type")
+    Integer countByReactionType(@Param("type") String type);
+
     void deleteByMessageAndUserAndReactionType(
             Message message,
             User user,

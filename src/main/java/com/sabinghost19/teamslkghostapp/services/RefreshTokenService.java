@@ -64,6 +64,10 @@ public class RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
     }
 
+    public Integer getNumberOfRecentStoredTokens(){
+        return this.refreshTokenRepository.findAll().size();
+    }
+
     private RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);

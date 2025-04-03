@@ -94,4 +94,8 @@ public class ChannelService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    public Integer getChannelCountForTeam(UUID teamId) {
+        return this.channelRepository.countByTeamId(teamId);
+    }
 }
