@@ -39,6 +39,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT DISTINCT tm.user FROM TeamMember tm WHERE tm.team.id = :teamId")
     List<User> findUsersByTeamId(@Param("teamId") UUID teamId);
 
-    <T> ScopedValue<T> findUserByEmail(String email);
+
 }
 

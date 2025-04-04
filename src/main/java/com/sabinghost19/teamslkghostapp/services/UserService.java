@@ -51,16 +51,10 @@ public class UserService{
 
         UserProfile userProfile = userProfileRepository.findByUser(user)
                 .orElseGet(() -> {
-                    // Creează un profil implicit cu toate câmpurile obligatorii setate
                     UserProfile newProfile = new UserProfile();
                     newProfile.setUser(user);
 
-                    // Setează câmpurile obligatorii pentru a evita constrângerile de bază de date
                     newProfile.setInstitution("Not specified"); // Câmpul institution este obligatoriu
-
-                    // Setează și alte câmpuri obligatorii dacă există
-                    // newProfile.setSomeOtherRequiredField("Default value");
-
                     return userProfileRepository.save(newProfile);
                 });
 
@@ -73,16 +67,10 @@ public class UserService{
 
         UserProfile userProfile = userProfileRepository.findByUser(user)
                 .orElseGet(() -> {
-                    // Creează un profil implicit cu toate câmpurile obligatorii setate
                     UserProfile newProfile = new UserProfile();
                     newProfile.setUser(user);
 
-                    // Setează câmpurile obligatorii pentru a evita constrângerile de bază de date
                     newProfile.setInstitution("Not specified"); // Câmpul institution este obligatoriu
-
-                    // Setează și alte câmpuri obligatorii dacă există
-                    // newProfile.setSomeOtherRequiredField("Default value");
-
                     return userProfileRepository.save(newProfile);
                 });
 

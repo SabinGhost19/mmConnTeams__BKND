@@ -27,7 +27,7 @@ public class TeamService {
     private final TeamMemberRepository teamMemberRepository;
 
     @Autowired
-    public TeamService( TeamRepository teamRepository, UserRepository userRepository, TeamMemberRepository teamMemberRepository) {
+    public TeamService( UserService userService,TeamRepository teamRepository, UserRepository userRepository, TeamMemberRepository teamMemberRepository) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.teamMemberRepository = teamMemberRepository;
@@ -135,9 +135,9 @@ public class TeamService {
                 .build();
     }
 
-    public List<UserDto> getTeamMembers(UUID teamId) {
+    public List<TeamUsersMutateDTO> getTeamMembers(UUID teamId) {
         return userRepository.findUsersByTeamId(teamId).stream()
-                .map(UserDto::new)
+                .map(this::mapToTeamUsersMutateDto)
                 .collect(Collectors.toList());
     }
 

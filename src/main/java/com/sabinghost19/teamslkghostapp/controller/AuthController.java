@@ -34,13 +34,25 @@ public class AuthController {
     private final LoginService loginService;
     private final JwtTokenProvider jwtTokenProvider;
     private final Logger logger = Logger.getLogger(AuthController.class.getName());
-
     @Autowired
     public AuthController(RegisterService registerService, LoginService loginService,JwtTokenProvider jwtTokenProvider) {
          this.registerService=registerService;
          this.loginService=loginService;
          this.jwtTokenProvider=jwtTokenProvider;
     }
+
+    @PostMapping("/admin-code")
+    public ResponseEntity<Integer>getAdminCode(@RequestBody String code){
+        logger.info("AdminCode is : "+code);
+        return ResponseEntity.ok().body(0);
+    }
+
+    @PostMapping("/admin-code/verify")
+    public ResponseEntity<Integer>verifyAdminCode(@RequestBody String code){
+        logger.info("verifyAdminCode is : "+code);
+        return ResponseEntity.ok().body(0);
+    }
+
 
     @GetMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateToken(@RequestHeader("Authorization") String authHeader) {
@@ -71,6 +83,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(loginUserReponseDTO);
         }
     }
+
+
+
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponseDTO>refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         RefreshTokenResponseDTO refreshTokenResponseDTO = this.loginService.refreshToken(request);
