@@ -47,6 +47,9 @@ public class Channel {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name="creatorID")
+    private UUID creatorID;
+
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
     @ToString.Exclude
     private Set<Message> messages = new HashSet<>();

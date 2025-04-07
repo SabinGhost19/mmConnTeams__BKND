@@ -53,7 +53,7 @@ public class ChannelService {
                 .build();
     }
     @Transactional
-    public ChannelDTO createChannel(ChannelDTO channelDTO) {
+    public ChannelDTO createChannel(UUID creatorID,ChannelDTO channelDTO) {
         UUID existingTeamId = channelDTO.getTeamId();
         Optional<Team> existingTeam = this.teamRepository.findById(existingTeamId);
 
@@ -61,7 +61,7 @@ public class ChannelService {
             throw new RuntimeException("Team not found with id: " + existingTeamId);
         }
 
-        Channel new_channel = channelDTO.toEntity(channelDTO, existingTeam.get());
+        Channel new_channel = channelDTO.toEntity(creatorID,channelDTO, existingTeam.get());
         Channel savedChannel = channelRepository.save(new_channel);
         return channelDTO.toDto(savedChannel);
     }

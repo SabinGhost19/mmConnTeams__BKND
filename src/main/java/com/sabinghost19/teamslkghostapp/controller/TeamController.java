@@ -91,8 +91,9 @@ public class TeamController {
     }
 
     @PostMapping("/channel")
-    public ResponseEntity<ChannelDTO> createChannel(@RequestBody ChannelDTO channelDTO) {
-        ChannelDTO saved_channel = this.channelService.createChannel(channelDTO);
+    public ResponseEntity<ChannelDTO> createChannel(@RequestBody ChannelDTO channelDTO,Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        ChannelDTO saved_channel = this.channelService.createChannel(currentUser.getId(),channelDTO);
         return ResponseEntity.ok(saved_channel);
     }
 

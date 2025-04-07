@@ -20,6 +20,7 @@ public class ChannelDTO {
     private String name;
     private String description;
     private Boolean isPrivate;
+    private UUID creatorID;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -36,10 +37,11 @@ public class ChannelDTO {
                 .isPrivate(channel.getIsPrivate())
                 .createdAt(channel.getCreatedAt())
                 .updatedAt(channel.getUpdatedAt())
+                .creatorID(channel.getCreatorID())
                 .build();
     }
 
-    public Channel toEntity(ChannelDTO channelDTO, Team team) {
+    public Channel toEntity(UUID creatorId,ChannelDTO channelDTO, Team team) {
         if (channelDTO == null) {
             return null;
         }
@@ -52,6 +54,7 @@ public class ChannelDTO {
                 .isPrivate(channelDTO.getIsPrivate())
                 .createdAt(channelDTO.getCreatedAt())
                 .updatedAt(channelDTO.getUpdatedAt())
+                .creatorID(creatorId)
                 .build();
     }
 }
