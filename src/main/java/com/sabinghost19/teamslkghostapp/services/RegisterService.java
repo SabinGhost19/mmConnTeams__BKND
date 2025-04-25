@@ -11,12 +11,15 @@ import com.sabinghost19.teamslkghostapp.model.UserProfile;
 import com.sabinghost19.teamslkghostapp.repository.NotificationPreferencesRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserProfileRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
+import io.jsonwebtoken.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @Service
@@ -31,6 +34,16 @@ public class RegisterService {
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
         this.notificationPreferencesRepository = notificationPreferencesRepository;
+    }
+
+    public void AsignImage(String imageUrl, UUID user_id){
+        Optional<UserProfile> profile=this.userProfileRepository.findByUserId(user_id);
+        if(profile.isPresent()) {
+            profile.get().setProfileImageUrl(imageUrl);
+            this.userProfileRepository.save(profile.get());
+        }else{
+            throw new IOException("User Profile Not Found");
+        }
     }
 
     public User registerUser(RegisterUserRequest request) {
@@ -202,8 +215,5 @@ public class RegisterService {
 //        return new_user;
 //
 //    }
-    public boolean uploadProfileImage(MultipartFile profileImage){
-        //if the upload succeded move forward
-        return true;
-    }
+
 }

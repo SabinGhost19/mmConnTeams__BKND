@@ -2,6 +2,8 @@ package com.sabinghost19.teamslkghostapp.services;
 
 
 
+import com.azure.storage.blob.sas.BlobSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.FileDTO;
 import com.sabinghost19.teamslkghostapp.model.File;
 import com.sabinghost19.teamslkghostapp.model.Team;
@@ -23,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -88,21 +91,87 @@ public class FileService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public String updateFile(String currentBlobUrl, MultipartFile newFile) throws IOException {
+        if (newFile.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+
+        // extract file key from URL (file name in blob storage)
+        String currentBlobKey = null;
+        if (currentBlobUrl != null) {
+            // extract file name from blob URL
+            // assuming URL format: https://caribytestblob19.blob.core.windows.net/caribu-container/[FILENAME]
+            String[] parts = currentBlobUrl.split("/");
+            if (parts.length > 0) {
+                String lastPart = parts[parts.length - 1];
+                // remove SAS parameters if they exist
+                if (lastPart.contains("?")) {
+                    currentBlobKey = lastPart.substring(0, lastPart.indexOf("?"));
+                } else {
+                    currentBlobKey = lastPart;
+                }
+            }
+        }
+
+        // delete old file from blob storage if it exists
+        if (currentBlobKey != null) {
+            try {
+                BlobAsyncClient oldBlobClient = blobContainerAsyncClient.getBlobAsyncClient(currentBlobKey);
+                oldBlobClient.delete().block();
+                logger.info("Old file deleted: {}", currentBlobKey);
+            } catch (Exception e) {
+                logger.warn("Could not delete old file: {}", e.getMessage());
+                // continue the process even if deletion failed
+            }
+        }
+
+        // upload new file
+        String newFileNameUnique = generateUniqueFileName(newFile.getOriginalFilename());
+        String fileName = newFile.getOriginalFilename();
+        BlobAsyncClient blobAsyncClient = blobContainerAsyncClient.getBlobAsyncClient(newFileNameUnique);
+
+        byte[] fileContent = newFile.getBytes();
+        Flux<ByteBuffer> data = Flux.just(ByteBuffer.wrap(fileContent));
+
+        ParallelTransferOptions transferOptions = new ParallelTransferOptions()
+                .setBlockSizeLong((long) DEFAULT_BLOCK_SIZE)
+                .setMaxConcurrency(DEFAULT_NUM_BUFFERS);
+
+        BlobHttpHeaders headers = new BlobHttpHeaders()
+                .setContentType(newFile.getContentType());
+
+        try {
+            blobAsyncClient.upload(data, transferOptions, true)
+                    .then(blobAsyncClient.setHttpHeaders(headers))
+                    .block();
+
+            logger.info("New file successfully uploaded: {}", newFileNameUnique);
+
+            // generate SAS token for access
+            OffsetDateTime expiryTime = OffsetDateTime.now().plusYears(1);
+            BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime,
+                    new BlobSasPermission().setReadPermission(true));
+            String sasToken = blobAsyncClient.generateSas(sasValues);
+            String newBlobUrlWithSas = blobAsyncClient.getBlobUrl() + "?" + sasToken;
+
+            return newBlobUrlWithSas;
+        } catch (Exception e) {
+            logger.error("Error updating file: {}", e.getMessage());
+            throw new IOException("Error updating file: " + e.getMessage(), e);
+        }
+    }
 
 
     @Transactional
-    public String uploadFile(
-            MultipartFile file,
-            UUID teamId,
-            UUID channelId,
-            UUID uploadedBy) throws IOException {
-
+    public String uploadFile_ProfileImage(MultipartFile file, User user) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File EMPTY");
         }
 
-        String fileName = generateUniqueFileName(file.getOriginalFilename());
-        BlobAsyncClient blobAsyncClient = blobContainerAsyncClient.getBlobAsyncClient(fileName);
+        String fileNameUnique = generateUniqueFileName(file.getOriginalFilename());
+        String fileName = file.getOriginalFilename();
+        BlobAsyncClient blobAsyncClient = blobContainerAsyncClient.getBlobAsyncClient(fileNameUnique);
 
         byte[] fileContent = file.getBytes();
         Flux<ByteBuffer> data = Flux.just(ByteBuffer.wrap(fileContent));
@@ -119,7 +188,68 @@ public class FileService {
                     .then(blobAsyncClient.setHttpHeaders(headers))
                     .block();
 
-            logger.info("File successfully uploaded: {}", fileName);
+            logger.info("File successfully uploaded: {}", fileNameUnique);
+
+            // generate SAS token with read permission that expires in 1 year (or adjust as needed)
+            OffsetDateTime expiryTime = OffsetDateTime.now().plusYears(1);
+
+            BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime,
+                    new BlobSasPermission().setReadPermission(true));
+
+            // generate the SAS token and create a URL with the SAS token
+            String sasToken = blobAsyncClient.generateSas(sasValues);
+            String blobUrlWithSas = blobAsyncClient.getBlobUrl() + "?" + sasToken;
+
+            File fileEntity = File.builder()
+                    .fileName(fileName)
+                    .fileType(file.getContentType())
+                    .fileSize((int) file.getSize())
+                    .awsS3Key(fileNameUnique)
+                    .url(blobUrlWithSas) // save the URL with SAS token
+                    .uploadedBy(user)
+                    .build();
+
+            fileRepository.save(fileEntity);
+
+            return blobUrlWithSas; // return the URL with SAS token
+        } catch (Exception e) {
+            logger.error("Eroare la încărcarea fișierului: {}", e.getMessage());
+            throw new IOException("Eroare la încărcarea fișierului: " + e.getMessage(), e);
+        }
+    }
+
+
+    @Transactional
+    public String uploadFile(
+            MultipartFile file,
+            UUID teamId,
+            UUID channelId,
+            UUID uploadedBy) throws IOException {
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File EMPTY");
+        }
+
+        String fileNameUnique = generateUniqueFileName(file.getOriginalFilename());
+        String fileName=file.getOriginalFilename();
+        BlobAsyncClient blobAsyncClient = blobContainerAsyncClient.getBlobAsyncClient(fileNameUnique);
+
+        byte[] fileContent = file.getBytes();
+        Flux<ByteBuffer> data = Flux.just(ByteBuffer.wrap(fileContent));
+
+        ParallelTransferOptions transferOptions = new ParallelTransferOptions()
+                .setBlockSizeLong((long) DEFAULT_BLOCK_SIZE)
+                .setMaxConcurrency(DEFAULT_NUM_BUFFERS);
+
+        BlobHttpHeaders headers = new BlobHttpHeaders()
+                .setContentType(file.getContentType());
+
+        try {
+            blobAsyncClient.upload(data, transferOptions, true)
+                    .then(blobAsyncClient.setHttpHeaders(headers))
+                    .block();
+
+            logger.info("File successfully uploaded: {}", fileNameUnique);
 
             String blobUrl = blobAsyncClient.getBlobUrl();
 
@@ -140,7 +270,7 @@ public class FileService {
                     .fileName(fileName)
                     .fileType(file.getContentType())
                     .fileSize((int) file.getSize())
-                    .awsS3Key(fileName)
+                    .awsS3Key(fileNameUnique)
                     .url(blobUrl)
                     .team(team)
                     .channel(channel)

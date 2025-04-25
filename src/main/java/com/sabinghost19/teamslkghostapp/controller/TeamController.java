@@ -97,27 +97,18 @@ public class TeamController {
         return ResponseEntity.ok(saved_channel);
     }
 
-    @PutMapping("/teams/enter")
+    @PutMapping("/teams/{teamId}/join")
     public ResponseEntity<String> enterTeam(
-            @RequestBody Map<String, String> request,
+            @PathVariable UUID teamId,
             Authentication authentication
     ) {
         try {
-            System.out.println("Raw request: " + request);
-            String teamId = request.get("teamId");
             System.out.println("Received teamId: " + teamId);
-
-            if (teamId == null || teamId.isEmpty()) {
+            if (teamId == null) {
                 return ResponseEntity.badRequest().body("Team ID is required");
             }
-
             User user = (User) authentication.getPrincipal();
-            System.out.println("User ID: " + user.getId());
-
-            UUID teamUUID = UUID.fromString(teamId.trim());
-            System.out.println("Converted UUID: " + teamUUID);
-
-            return ResponseEntity.ok(this.teamService.enterTeam(user, teamUUID));
+            return ResponseEntity.ok(this.teamService.enterTeam(user, teamId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid Team ID format");
         }

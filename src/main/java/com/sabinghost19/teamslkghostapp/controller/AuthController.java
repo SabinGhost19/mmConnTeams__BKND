@@ -7,6 +7,7 @@ import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.LoginUserRe
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RefreshTokenResponseDTO;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RegisterUserResponseDTO;
 import com.sabinghost19.teamslkghostapp.security.jwt.JwtTokenProvider;
+import com.sabinghost19.teamslkghostapp.services.FileService;
 import com.sabinghost19.teamslkghostapp.services.LoginService;
 import com.sabinghost19.teamslkghostapp.services.RegisterService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -33,12 +35,15 @@ public class AuthController {
     private final RegisterService registerService;
     private final LoginService loginService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final FileService fileService;
+
     private final Logger logger = Logger.getLogger(AuthController.class.getName());
     @Autowired
-    public AuthController(RegisterService registerService, LoginService loginService,JwtTokenProvider jwtTokenProvider) {
+    public AuthController(RegisterService registerService, LoginService loginService,JwtTokenProvider jwtTokenProvider,FileService fileService) {
          this.registerService=registerService;
          this.loginService=loginService;
          this.jwtTokenProvider=jwtTokenProvider;
+         this.fileService=fileService;
     }
 
     @PostMapping("/admin-code")
@@ -132,9 +137,16 @@ public class AuthController {
 
        if(profileImage!=null && !profileImage.isEmpty()){
             //save the profile image in cloud or somewhere
-          if (!this.registerService.uploadProfileImage(profileImage)) {
-              //daca a crapat...handle
-          }
+           try {
+               String blolbUrl=fileService.uploadFile_ProfileImage(profileImage,savedUser);
+
+               //save the blolb url into local repository
+               this.registerService.AsignImage(blolbUrl,savedUser.getId());
+
+           }catch (IOException e){
+               return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).build();
+           }
+
         }
 
        RegisterUserResponseDTO registerUserResponseDTO=
