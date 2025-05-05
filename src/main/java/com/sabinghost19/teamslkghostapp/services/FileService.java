@@ -217,6 +217,66 @@ public class FileService {
             throw new IOException("Eroare la încărcarea fișierului: " + e.getMessage(), e);
         }
     }
+    @Transactional
+    public String uploadFile_ProfileImage_Team(MultipartFile file,UUID teamId,User user) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File EMPTY");
+        }
+
+        String fileNameUnique = generateUniqueFileName(file.getOriginalFilename());
+        String fileName = file.getOriginalFilename();
+        BlobAsyncClient blobAsyncClient = blobContainerAsyncClient.getBlobAsyncClient(fileNameUnique);
+
+        byte[] fileContent = file.getBytes();
+        Flux<ByteBuffer> data = Flux.just(ByteBuffer.wrap(fileContent));
+
+        ParallelTransferOptions transferOptions = new ParallelTransferOptions()
+                .setBlockSizeLong((long) DEFAULT_BLOCK_SIZE)
+                .setMaxConcurrency(DEFAULT_NUM_BUFFERS);
+
+        BlobHttpHeaders headers = new BlobHttpHeaders()
+                .setContentType(file.getContentType());
+
+        try {
+            blobAsyncClient.upload(data, transferOptions, true)
+                    .then(blobAsyncClient.setHttpHeaders(headers))
+                    .block();
+
+            logger.info("File successfully uploaded: {}", fileNameUnique);
+
+            // generate SAS token with read permission that expires in 1 year (or adjust as needed)
+            OffsetDateTime expiryTime = OffsetDateTime.now().plusYears(1);
+
+            BlobServiceSasSignatureValues sasValues = new BlobServiceSasSignatureValues(expiryTime,
+                    new BlobSasPermission().setReadPermission(true));
+
+            // generate the SAS token and create a URL with the SAS token
+            String sasToken = blobAsyncClient.generateSas(sasValues);
+            String blobUrlWithSas = blobAsyncClient.getBlobUrl() + "?" + sasToken;
+
+            Team team = teamId != null
+                    ? teamRepository.findById(teamId)
+                    .orElseThrow(() -> new RuntimeException("Echipă negăsită"))
+                    : null;
+
+            File fileEntity = File.builder()
+                    .fileName(fileName)
+                    .fileType(file.getContentType())
+                    .fileSize((int) file.getSize())
+                    .awsS3Key(fileNameUnique)
+                    .url(blobUrlWithSas) // save the URL with SAS token
+                    .uploadedBy(user)
+                    .team(team)
+                    .build();
+
+            fileRepository.save(fileEntity);
+
+            return blobUrlWithSas; // return the URL with SAS token
+        } catch (Exception e) {
+            logger.error("Eroare la încărcarea fișierului: {}", e.getMessage());
+            throw new IOException("Eroare la încărcarea fișierului: " + e.getMessage(), e);
+        }
+    }
 
     @Transactional
     public String uploadFile(

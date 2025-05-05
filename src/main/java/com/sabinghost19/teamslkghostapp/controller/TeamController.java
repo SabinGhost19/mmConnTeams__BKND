@@ -161,7 +161,9 @@ public class TeamController {
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Fișierul încărcat este gol");
             }
-           String blobURL= this.fileService.uploadFile(image,teamId);
+            User  currentUser = (User) authentication.getPrincipal();
+
+           String blobURL= this.fileService.uploadFile_ProfileImage_Team(image,teamId,currentUser);
             if(this.teamService.assignImage(blobURL,teamId)){
                 return ResponseEntity.status(HttpStatus.CREATED).body(blobURL);
             }else{
