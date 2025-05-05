@@ -218,6 +218,60 @@ public class FileService {
         }
     }
 
+    @Transactional
+    public String uploadFile(
+            MultipartFile file,
+            UUID teamId) throws IOException {
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File EMPTY");
+        }
+
+        String fileNameUnique = generateUniqueFileName(file.getOriginalFilename());
+        String fileName=file.getOriginalFilename();
+        BlobAsyncClient blobAsyncClient = blobContainerAsyncClient.getBlobAsyncClient(fileNameUnique);
+
+        byte[] fileContent = file.getBytes();
+        Flux<ByteBuffer> data = Flux.just(ByteBuffer.wrap(fileContent));
+
+        ParallelTransferOptions transferOptions = new ParallelTransferOptions()
+                .setBlockSizeLong((long) DEFAULT_BLOCK_SIZE)
+                .setMaxConcurrency(DEFAULT_NUM_BUFFERS);
+
+        BlobHttpHeaders headers = new BlobHttpHeaders()
+                .setContentType(file.getContentType());
+
+        try {
+            blobAsyncClient.upload(data, transferOptions, true)
+                    .then(blobAsyncClient.setHttpHeaders(headers))
+                    .block();
+
+            logger.info("File successfully uploaded: {}", fileNameUnique);
+
+            String blobUrl = blobAsyncClient.getBlobUrl();
+
+            Team team = teamId != null
+                    ? teamRepository.findById(teamId)
+                    .orElseThrow(() -> new RuntimeException("Echipă negăsită"))
+                    : null;
+
+            File fileEntity = File.builder()
+                    .fileName(fileName)
+                    .fileType(file.getContentType())
+                    .fileSize((int) file.getSize())
+                    .awsS3Key(fileNameUnique)
+                    .url(blobUrl)
+                    .team(team)
+                    .build();
+
+            fileRepository.save(fileEntity);
+
+            return blobUrl;
+        } catch (Exception e) {
+            logger.error("Eroare la încărcarea fișierului: {}", e.getMessage());
+            throw new IOException("Eroare la încărcarea fișierului: " + e.getMessage(), e);
+        }
+    }
 
     @Transactional
     public String uploadFile(

@@ -76,6 +76,7 @@ public class LoginService {
                     .user(new UserDto(user))
                     .token(jwt)
                     .refreshToken(refreshToken.getToken())
+                    .roles(user.getRoles())
                     .build();
         } catch (BadCredentialsException e) {
             return LoginUserReponseDTO.builder()

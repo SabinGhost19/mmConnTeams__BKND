@@ -12,6 +12,7 @@ import com.sabinghost19.teamslkghostapp.repository.NotificationPreferencesReposi
 import com.sabinghost19.teamslkghostapp.repository.UserProfileRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
 import io.jsonwebtoken.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+@Slf4j
 @Service
 public class RegisterService {
     private final Logger logger = Logger.getLogger(RegisterService.class.getName());
@@ -45,57 +47,72 @@ public class RegisterService {
             throw new IOException("User Profile Not Found");
         }
     }
-
+    public boolean hasRole(String email,String roleString){
+        Optional<User>user=this.userRepository.findByEmail(email);
+        Role role= Role.valueOf(roleString);
+        return user.isPresent() && user.get().getRoles().contains(role);
+    }
     public User registerUser(RegisterUserRequest request) {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new PasswordMismatchException("Passwords do not match");
         }
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException("Email already exists");
+            Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+
+            if (existingUser.isPresent() && existingUser.get().getRoles().contains(request.getRole())) {
+                throw new EmailAlreadyExistsException("Email already exists with the same role");
+            }
+            existingUser.get().getRoles().add(request.getRole());
+
+            User savedUser = userRepository.save(existingUser.get());
+            User new_user = userRepository.save(savedUser);
+            return new_user;
         }
 
-        List<Role> roles = new ArrayList<>();
-        roles.add(request.getRole() != null ? request.getRole() : Role.STUDENT);
+            List<Role> roles = new ArrayList<>();
+            roles.add(request.getRole() != null ? request.getRole() : Role.STUDENT);
 
-        User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .password(request.getPassword())
-                .status("OFFLINE") // Set explicitly
-                .roles(roles)
-                .build();
+            User user = User.builder()
+                    .firstName(request.getFirstName())
+                    .lastName(request.getLastName())
+                    .email(request.getEmail())
+                    .password(request.getPassword())
+                    .status("OFFLINE") // Set explicitly
+                    .roles(roles)
+                    .build();
 
-        User savedUser = userRepository.save(user);
+            User savedUser = userRepository.save(user);
 
-        // Restul logicii pentru profile și preferințe
-        // ...
-        User new_user = userRepository.save(savedUser);
+            // Restul logicii pentru profile și preferințe
+            // ...
+            User new_user = userRepository.save(savedUser);
 
-        // Restul logicii pentru profile și preferințe
-        // ...
-        //build based on request and save NotPref
-        NotificationPreferencesDto prefNDTO=request.getNotificationPreferences();
-        NotificationPreferences prefNtoBeSaved=NotificationPreferences.builder().
-                user(new_user).email(prefNDTO.isEmail()).push(prefNDTO.isPush()).
-                desktop(prefNDTO.isDesktop()).build();
-        this.notificationPreferencesRepository.save(prefNtoBeSaved);
+            // Restul logicii pentru profile și preferințe
+            // ...
+            //build based on request and save NotPref
+            NotificationPreferencesDto prefNDTO = request.getNotificationPreferences();
+            NotificationPreferences prefNtoBeSaved = NotificationPreferences.builder().
+                    user(new_user).email(prefNDTO.isEmail()).push(prefNDTO.isPush()).
+                    desktop(prefNDTO.isDesktop()).build();
+            this.notificationPreferencesRepository.save(prefNtoBeSaved);
 
 
-        UserProfile new_profile=UserProfile.builder()
-                .institution(request.getInstitution())
-                .user(new_user).
-                studyLevel(request.getStudyLevel()).
-                specialization(request.getSpecialization())
-                .year(request.getYear()).
-                group(request.getGroup()).
-                bio(request.getBio()).
-                phoneNumber(request.getPhoneNumber()).
-                termsAccepted(request.isTermsAccepted()).
-                privacyPolicyAccepted(request.isPrivacyPolicyAccepted()).
-                build();
-        this.userProfileRepository.save(new_profile);
-        //make response
+            UserProfile new_profile = UserProfile.builder()
+                    .institution(request.getInstitution())
+                    .user(new_user).
+                    studyLevel(request.getStudyLevel()).
+                    specialization(request.getSpecialization())
+                    .year(request.getYear()).
+                    group(request.getGroup()).
+                    bio(request.getBio()).
+                    phoneNumber(request.getPhoneNumber()).
+                    termsAccepted(request.isTermsAccepted()).
+                    privacyPolicyAccepted(request.isPrivacyPolicyAccepted()).
+                    build();
+            this.userProfileRepository.save(new_profile);
+            //make response
+        logger.info("USER IS: "+savedUser);
         return savedUser;
     }
 

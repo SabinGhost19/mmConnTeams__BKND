@@ -1,23 +1,21 @@
 package com.sabinghost19.teamslkghostapp.controller;
 
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.*;
-import com.sabinghost19.teamslkghostapp.model.Channel;
-import com.sabinghost19.teamslkghostapp.model.Team;
 import com.sabinghost19.teamslkghostapp.model.User;
 import com.sabinghost19.teamslkghostapp.services.ChannelService;
+import com.sabinghost19.teamslkghostapp.services.FileService;
 import com.sabinghost19.teamslkghostapp.services.TeamService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -28,11 +26,13 @@ public class TeamController {
     private final TeamService teamService;
     private final ChannelService channelService;
     private final Logger logger= LoggerFactory.getLogger(TeamController.class);
+    private final FileService fileService;
 
     @Autowired
-    public TeamController(TeamService teamService, ChannelService channelService) {
+    public TeamController(TeamService teamService, ChannelService channelService, FileService fileService) {
         this.channelService = channelService;
         this.teamService = teamService;
+        this.fileService=fileService;
     }
 
     @GetMapping("/users/team-mates")
@@ -44,6 +44,22 @@ public class TeamController {
         List<TeamUsersMutateDTO> teamMates = teamService.getUsersInSameTeams(currentUser.getId());
 
         return ResponseEntity.ok(teamMates);
+    }
+    @GetMapping("/events-getall")
+    public ResponseEntity<List<EventDTO>>getEvent(Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(this.teamService.getEvents(currentUser.getId()));
+    }
+
+    @GetMapping("/user-teams")
+    public ResponseEntity<List<TeamDTO>> getUserTeamsSimple(Authentication authentication) {
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        List<TeamDTO>teams=teamService.getTeamsForUser(currentUser.getId());
+        if (teams.isEmpty()){
+            logger.error("Teams are null....: {}", teams);}
+        return ResponseEntity.ok(teams);
     }
 
     @GetMapping("/teams")
@@ -57,6 +73,11 @@ public class TeamController {
     @GetMapping("/teams/{teamId}")
     public ResponseEntity<TeamDTO> getTeam(@PathVariable UUID teamId) {
         return ResponseEntity.ok(teamService.getTeamById(teamId));
+    }
+    @GetMapping("/channels-getforuser")
+    public ResponseEntity<List<ChannelDTO>> getChannelsForUser(Authentication authentication) {
+        User user= (User) authentication.getPrincipal();
+        return ResponseEntity.ok(this.teamService.getChannels(user.getId()));
     }
 
     @GetMapping("/teams/{teamId}/channels")
@@ -128,7 +149,38 @@ public class TeamController {
         return UUID.fromString("");
     }
 
-    @PostMapping("/teams")
+    @PostMapping("/teams/upload-image")
+    public ResponseEntity<?> uploadTeamImage(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam("teamId") UUID teamId,
+            Authentication authentication) {
+        try {
+            logger.info("Uploading team image!!!!"+teamId);
+            if (image.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Fișierul încărcat este gol");
+            }
+           String blobURL= this.fileService.uploadFile(image,teamId);
+            if(this.teamService.assignImage(blobURL,teamId)){
+                return ResponseEntity.status(HttpStatus.CREATED).body(blobURL);
+            }else{
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("INTERNAL SERVER ERROR");
+            }
+
+        }
+     catch (IllegalArgumentException e) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body("Echipa cu id-ul specificat nu a fost găsită");
+    } catch (Exception e) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Eroare la încărcarea imaginii: " + e.getMessage());
+    }
+    }
+
+            @PostMapping("/teams")
     public ResponseEntity<?> createTeam(
             @RequestBody TeamDTO teamRequest,
             Authentication authentication
@@ -144,7 +196,7 @@ public class TeamController {
             System.out.println("Utilizator curent: " + currentUser.getEmail());
 
             TeamDTO savedTeam = teamService.createTeam(teamRequest, currentUser);
-            return ResponseEntity.ok(savedTeam);
+            return ResponseEntity.ok(savedTeam.getId());
         } catch (Exception e) {
             e.printStackTrace();
 

@@ -58,6 +58,15 @@ public class AuthController {
         return ResponseEntity.ok().body(0);
     }
 
+    @PostMapping("/validate-role")
+    public ResponseEntity<Integer>validateRole(Authentication authentication,@RequestBody String role){
+        User user = (User) authentication.getPrincipal();
+        if(this.registerService.hasRole(user.getEmail(),role)){
+            return ResponseEntity.status(HttpStatus.OK).build();
+        }else{
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
 
     @GetMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateToken(@RequestHeader("Authorization") String authHeader) {

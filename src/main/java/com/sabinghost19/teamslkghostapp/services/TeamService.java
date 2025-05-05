@@ -1,23 +1,15 @@
 package com.sabinghost19.teamslkghostapp.services;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamUsersMutateDTO;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.UserDto;
-import com.sabinghost19.teamslkghostapp.model.Team;
-import com.sabinghost19.teamslkghostapp.model.TeamMember;
-import com.sabinghost19.teamslkghostapp.model.User;
-import com.sabinghost19.teamslkghostapp.model.UserProfile;
+import com.sabinghost19.teamslkghostapp.dto.registerRequest.*;
+import com.sabinghost19.teamslkghostapp.model.*;
 import com.sabinghost19.teamslkghostapp.repository.TeamMemberRepository;
 import com.sabinghost19.teamslkghostapp.repository.TeamRepository;
 import com.sabinghost19.teamslkghostapp.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-import com.sabinghost19.teamslkghostapp.dto.registerRequest.TeamDTO;
 
 @Service
 public class TeamService {
@@ -33,11 +25,43 @@ public class TeamService {
         this.teamMemberRepository = teamMemberRepository;
     }
 
+    public boolean assignImage(String blobUrl, UUID teamId) {
+        Optional<Team> optionalTeam = this.teamRepository.findById(teamId);
+
+        if (optionalTeam.isPresent()) {
+            Team team = optionalTeam.get();
+            team.setIconUrl(blobUrl);
+            this.teamRepository.save(team);
+            return true;
+        }
+
+        return false;
+    }
+
+    public List<Team> getAllTeams_raw_byUserId(UUID userId) {
+        return  this.teamRepository.findTeamsByUserId(userId);
+    }
     public List<TeamDTO> getAllTeams(){
         List<Team> teams= this.teamRepository.findAll();
         return teams.stream().map(team->new TeamDTO().toDto(team)).collect(Collectors.toList());
     }
 
+    @Transactional
+    public List<ChannelDTO>getChannels(UUID user_id){
+        List<Team>teams=this.getAllTeams_raw_byUserId(user_id);
+        List<ChannelDTO> allChannels = teams.stream()
+                .flatMap(team -> team.getChannels().stream())
+                .map(channel -> convertToDTO(channel))
+                .collect(Collectors.toList());
+        return allChannels;
+    }
+    public List<EventDTO>getEvents(UUID user_id){
+        List<Event> events = teamRepository.findAllEventsByUserId(user_id);
+
+        return events.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
     public List<TeamUsersMutateDTO> getUsersInSameTeams(UUID userId) {
         List<User> teamMates = userRepository.findUsersInTeamsWithProfileAndRoles(
                 teamMemberRepository.findTeamIdsByUserId(userId),
@@ -116,6 +140,7 @@ public class TeamService {
                 .map(team -> TeamDTO.builder()
                         .id(team.getId())
                         .name(team.getName())
+                        .iconUrl(team.getIconUrl())
                         .description(team.getDescription())
                         .build())
                 .collect(Collectors.toList());
@@ -166,5 +191,29 @@ public class TeamService {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+    private EventDTO convertToDTO(Event event) {
+        return EventDTO.builder()
+                .id(event.getId())
+                .title(event.getTitle())
+                .description(event.getDescription())
+                .eventDate(event.getEventDate())
+                .duration(event.getDuration())
+                .teamId(event.getTeamId())
+                .channelId(event.getChannelId())
+                .createdBy(event.getCreatedBy())
+                .createdAt(event.getCreatedAt())
+                .updatedAt(event.getUpdatedAt())
+                .build();
+    }
+    private ChannelDTO convertToDTO(Channel channel) {
+        return ChannelDTO.builder()
+                .id(channel.getId())
+                .name(channel.getName())
+                .teamId(channel.getTeam().getId())
+                .description(channel.getDescription())
+                .isPrivate(channel.getIsPrivate())
+                .createdAt(channel.getCreatedAt())
+                .build();
     }
 }
