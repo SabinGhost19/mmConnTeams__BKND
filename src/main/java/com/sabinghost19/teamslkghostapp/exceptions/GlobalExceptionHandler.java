@@ -1,5 +1,6 @@
 package com.sabinghost19.teamslkghostapp.exceptions;
 
+import com.azure.core.exception.ResourceNotFoundException;
 import com.sabinghost19.teamslkghostapp.dto.registerRequest.response.RegisterUserResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
