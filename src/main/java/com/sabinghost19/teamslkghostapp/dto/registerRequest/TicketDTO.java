@@ -17,6 +17,8 @@ public class TicketDTO {
     private Long id;
     private UUID userId;
     private UUID sourceId;
+    private UUID destinationId;
+    private UUID channelId;
     private String title;
     private LocalDateTime deadline;
     private String purpose;

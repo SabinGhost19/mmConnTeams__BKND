@@ -29,7 +29,13 @@ public class Ticket {
     private UUID userId;
 
     @Column(nullable = false)
+    private UUID channelId;
+
+    @Column(nullable = false)
     private UUID sourceId;
+
+    @Column(nullable = false)
+    private UUID destinationId;
 
     @Column(nullable = false, length = 100)
     private String title;
