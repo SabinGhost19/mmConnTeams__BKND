@@ -63,10 +63,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/auth/**").permitAll()
-                                .requestMatchers("/ws/**").permitAll() // WebSocket endpoints
-                                .requestMatchers("/topic/**").permitAll() // STOMP broker destinations
-                                .requestMatchers("/app/**").permitAll() // WebSocket application destinations
-                                .requestMatchers("/user/**").permitAll() // User-specific destinations
+                                .requestMatchers("/ws/**").permitAll()
+                                .requestMatchers("/topic/**").permitAll()
+                                .requestMatchers("/app/**").permitAll()
+                                .requestMatchers("/user/**").permitAll()
+                                .requestMatchers("/api/stat/**").hasAuthority("ADMIN")
                                 .anyRequest().authenticated()
                 );
 

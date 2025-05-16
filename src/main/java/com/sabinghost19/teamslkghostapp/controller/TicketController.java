@@ -25,14 +25,15 @@ public class TicketController {
 
     @PostMapping
     public ResponseEntity<Ticket> createTicket(@RequestBody TicketDTO ticketDTO, Authentication authentication) {
-        User user=(User)authentication.getPrincipal();
-        Ticket createdTicket = ticketService.createTicket(ticketDTO,user.getId());
+        User user = (User) authentication.getPrincipal();
+        Ticket createdTicket = ticketService.createTicket(ticketDTO, user.getId());
         return new ResponseEntity<>(createdTicket, HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<Ticket>> getAllTickets() {
-        List<Ticket> tickets = ticketService.getAllTickets();
+    public ResponseEntity<List<Ticket>> getAllTickets(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        List<Ticket> tickets = ticketService.getAllTickets(user.getId());
         return ResponseEntity.ok(tickets);
     }
 
@@ -42,15 +43,17 @@ public class TicketController {
         return ResponseEntity.ok(ticket);
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Ticket>> getTicketsByUserId(@PathVariable UUID userId) {
-        List<Ticket> tickets = ticketService.getTicketsByUserId(userId);
+    @GetMapping("/source")
+    public ResponseEntity<List<Ticket>> getTicketsBySourceId(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        List<Ticket> tickets = ticketService.getTicketsBySourceId(user.getId());
         return ResponseEntity.ok(tickets);
     }
 
-    @GetMapping("/source/{sourceId}")
-    public ResponseEntity<List<Ticket>> getTicketsBySourceId(@PathVariable UUID sourceId) {
-        List<Ticket> tickets = ticketService.getTicketsBySourceId(sourceId);
+    @GetMapping("/destination")
+    public ResponseEntity<List<Ticket>> getTicketsByDestinationId(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        List<Ticket> tickets = ticketService.getTicketsByDestinationId(user.getId());
         return ResponseEntity.ok(tickets);
     }
 

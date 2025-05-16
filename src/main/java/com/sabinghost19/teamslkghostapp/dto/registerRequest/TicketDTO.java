@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TicketDTO {
-    private Long id;
+    private UUID id;
     private UUID userId;
     private UUID sourceId;
     private UUID destinationId;
